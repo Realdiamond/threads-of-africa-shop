@@ -1,5 +1,6 @@
 import {Link} from '@tanstack/react-router';
 import logoAsset from '@/assets/threads-of-africa-logo.png.asset.json';
+import emblemAsset from '@/assets/threads-of-africa-emblem.png.asset.json';
 import {useState} from 'react';
 import {Search,ShoppingBag,Heart,Menu,ArrowRight,Plus,Minus,Trash2,Instagram,Globe,Leaf,PackageCheck,Scissors} from 'lucide-react';
 import {Button} from '@/components/ui/button';
@@ -8,7 +9,7 @@ import {Dialog,DialogContent,DialogTitle,DialogDescription} from '@/components/u
 import {useStore} from './store-context';
 import {money,products} from '@/lib/catalog';
 import {ProductCard} from './product-card';
-export function Brand(){return <Link to="/" aria-label="The Threads of Africa home" className="brand"><img src={logoAsset.url} alt="The Threads of Africa — Every Thread Tells a Story" className="brand-logo"/></Link>}
+export function Brand(){return <Link to="/" aria-label="The Threads of Africa home" className="brand"><img src={emblemAsset.url} alt="" className="brand-mark"/><span className="brand-text"><span className="brand-the">THE</span>THREADS<span className="brand-of">OF AFRICA</span></span></Link>}
 export function StoreHeader(){const store=useStore();const [menu,setMenu]=useState(false);const [search,setSearch]=useState(false);const [term,setTerm]=useState('');const [saved,setSaved]=useState(false);const [checkout,setCheckout]=useState(false);const total=store.bag.reduce((a,x)=>a+x.product.price*x.quantity,0);return <>
 <div className="announcement">Welcome to The Threads of Africa — Every Thread Tells a Story.</div>
 <header className="site-width main-nav"><Link to="/" aria-label="Threads of Africa home"><Brand/></Link><nav className="nav-links"><Link to="/shop" search={{category:'All'}}>Shop all</Link><Link to="/shop" search={{category:'Women'}}>Women</Link><Link to="/shop" search={{category:'Men'}}>Men</Link><Link to="/shop" search={{category:'New'}}>New in</Link><Link to="/kids">Kids</Link><Link to="/heritage">Heritage</Link><Link to="/story">Our story</Link></nav><div className="flex items-center gap-1 justify-end"><Button variant="ghost" size="icon" title="Search" aria-label="Search" onClick={()=>setSearch(true)}><Search/></Button><Button variant="ghost" size="icon" title="Favorites" aria-label="Favorites" onClick={()=>setSaved(true)} className="relative"><Heart/>{store.favorites.length>0&&<span className="absolute -top-0.5 -right-0.5 bg-primary text-primary-foreground rounded-full w-4 h-4 text-[9px]">{store.favorites.length}</span>}</Button><Button variant="ghost" size="icon" title="Shopping bag" aria-label="Shopping bag" onClick={()=>store.setBagOpen(true)} className="relative"><ShoppingBag/>{store.bag.length>0&&<span className="absolute -top-0.5 -right-0.5 bg-primary text-primary-foreground rounded-full w-4 h-4 text-[9px]">{store.bag.reduce((a,x)=>a+x.quantity,0)}</span>}</Button><Button variant="ghost" size="icon" aria-label="Open menu" className="lg:hidden" onClick={()=>setMenu(true)}><Menu/></Button></div></header>
