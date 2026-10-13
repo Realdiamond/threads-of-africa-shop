@@ -120,6 +120,7 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  useCartSync();
 
   return (
     <QueryClientProvider client={queryClient}>
@@ -131,3 +132,4 @@ function RootComponent() {
     </QueryClientProvider>
   );
 }
+import { useCartSync } from "@/stores/cart-store";
