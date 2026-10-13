@@ -1,4 +1,4 @@
 # Threads of Africa
-- [ ] Create forest-green editorial storefront and sample fashion imagery.
-- [ ] Build collection browsing, product details, search, favorites, and shopping bag.
-- [ ] Verify shopping flow and page layouts.
+- [x] Create forest-green editorial storefront and sample fashion imagery.
+- [x] Build collection browsing, product details, search, favorites, and shopping bag.
+- [x] Verify shopping flow and page layouts.
