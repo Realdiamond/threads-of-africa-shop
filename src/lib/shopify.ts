@@ -197,6 +197,7 @@ function isCartNotFoundError(userErrors: Array<{ field: (string | null)[] | null
 export async function createShopifyCart(item: {
   variantId: string;
   quantity: number;
+  lineId?: string | null;
 }): Promise<{ cartId: string; checkoutUrl: string; lineId: string } | null> {
   const data = await storefrontApiRequest(CART_CREATE_MUTATION, {
     input: { lines: [{ quantity: item.quantity, merchandiseId: item.variantId }] },
@@ -218,7 +219,7 @@ export async function createShopifyCart(item: {
 
 export async function addLineToShopifyCart(
   cartId: string,
-  item: { variantId: string; quantity: number },
+  item: { variantId: string; quantity: number; lineId?: string | null },
 ): Promise<{ success: boolean; lineId?: string; cartNotFound?: boolean }> {
   const data = await storefrontApiRequest(CART_LINES_ADD_MUTATION, {
     cartId,
