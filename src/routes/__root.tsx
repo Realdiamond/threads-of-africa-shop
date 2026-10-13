@@ -80,9 +80,9 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Threads of Africa" },
-      { name: "description", content: "Contemporary clothing. Timeless culture. Threads of Africa." },
-      { property: "og:title", content: "Threads of Africa" },
+      { title: "The Threads of Africa" },
+      { name: "description", content: "Rooted in Heritage. Designed for Now. Every Thread Tells a Story." },
+      { property: "og:title", content: "The Threads of Africa" },
       { property: "og:description", content: "African roots. Contemporary expression." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },

@@ -14,7 +14,7 @@
 .brand-mark {width:31px;height:35px;flex-shrink:0;}
 .announcement {background:var(--primary);color:var(--primary-foreground);font-size:11px;text-align:center;padding:10px 18px;}
 .main-nav {height:88px;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:25px;}
-.nav-links {display:flex;gap:30px;font-size:13px;align-items:center;}
+.nav-links {display:flex;gap:20px;font-size:13px;align-items:center;}
 .nav-links a {position:relative;padding:12px 0;}
 .nav-links a[data-status=active]::after {content:'';position:absolute;bottom:4px;left:0;right:0;height:1px;background:var(--primary);}
 .hero {height:590px;position:relative;overflow:hidden;}
@@ -55,3 +55,5 @@
 /* Keep full sample garments visible, and preserve readable campaign copy on phones. */
 .product-photo img {object-fit:contain;}
 @media(max-width:640px){.hero-copy{width:100%;padding-inline:18px;background:linear-gradient(0deg,var(--secondary) 0%,var(--secondary) 23%,color-mix(in oklch,var(--secondary) 90%,transparent) 48%,transparent 83%)}.hero h1{font-size:38px;max-width:355px}.hero-copy .eyebrow{font-size:9px;letter-spacing:1.4px}}
+
+@media(min-width:641px) and (max-width:1150px){.nav-links{display:none}.main-nav{grid-template-columns:1fr auto}}

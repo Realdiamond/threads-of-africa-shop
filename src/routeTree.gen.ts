@@ -10,8 +10,19 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as CollaborationsRouteImport } from './routes/collaborations'
+import { Route as ContactRouteImport } from './routes/contact'
+import { Route as CraftRouteImport } from './routes/craft'
+import { Route as FaqRouteImport } from './routes/faq'
+import { Route as HeritageRouteImport } from './routes/heritage'
+import { Route as KidsRouteImport } from './routes/kids'
+import { Route as ResponsibilityRouteImport } from './routes/responsibility'
+import { Route as ReturnsRouteImport } from './routes/returns'
+import { Route as ShippingRouteImport } from './routes/shipping'
 import { Route as ShopRouteImport } from './routes/shop'
+import { Route as SizeGuideRouteImport } from './routes/size-guide'
 import { Route as StoryRouteImport } from './routes/story'
+import { Route as WholesaleRouteImport } from './routes/wholesale'
 import { Route as ProductIdRouteImport } from './routes/product.$id'
 
 const IndexRoute = IndexRouteImport.update({
@@ -19,14 +30,69 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CollaborationsRoute = CollaborationsRouteImport.update({
+  id: '/collaborations',
+  path: '/collaborations',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ContactRoute = ContactRouteImport.update({
+  id: '/contact',
+  path: '/contact',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CraftRoute = CraftRouteImport.update({
+  id: '/craft',
+  path: '/craft',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FaqRoute = FaqRouteImport.update({
+  id: '/faq',
+  path: '/faq',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const HeritageRoute = HeritageRouteImport.update({
+  id: '/heritage',
+  path: '/heritage',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const KidsRoute = KidsRouteImport.update({
+  id: '/kids',
+  path: '/kids',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ResponsibilityRoute = ResponsibilityRouteImport.update({
+  id: '/responsibility',
+  path: '/responsibility',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ReturnsRoute = ReturnsRouteImport.update({
+  id: '/returns',
+  path: '/returns',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ShippingRoute = ShippingRouteImport.update({
+  id: '/shipping',
+  path: '/shipping',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ShopRoute = ShopRouteImport.update({
   id: '/shop',
   path: '/shop',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SizeGuideRoute = SizeGuideRouteImport.update({
+  id: '/size-guide',
+  path: '/size-guide',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const StoryRoute = StoryRouteImport.update({
   id: '/story',
   path: '/story',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const WholesaleRoute = WholesaleRouteImport.update({
+  id: '/wholesale',
+  path: '/wholesale',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ProductIdRoute = ProductIdRouteImport.update({
@@ -37,35 +103,125 @@ const ProductIdRoute = ProductIdRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/collaborations': typeof CollaborationsRoute
+  '/contact': typeof ContactRoute
+  '/craft': typeof CraftRoute
+  '/faq': typeof FaqRoute
+  '/heritage': typeof HeritageRoute
+  '/kids': typeof KidsRoute
+  '/responsibility': typeof ResponsibilityRoute
+  '/returns': typeof ReturnsRoute
+  '/shipping': typeof ShippingRoute
   '/shop': typeof ShopRoute
+  '/size-guide': typeof SizeGuideRoute
   '/story': typeof StoryRoute
+  '/wholesale': typeof WholesaleRoute
   '/product/$id': typeof ProductIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/collaborations': typeof CollaborationsRoute
+  '/contact': typeof ContactRoute
+  '/craft': typeof CraftRoute
+  '/faq': typeof FaqRoute
+  '/heritage': typeof HeritageRoute
+  '/kids': typeof KidsRoute
+  '/responsibility': typeof ResponsibilityRoute
+  '/returns': typeof ReturnsRoute
+  '/shipping': typeof ShippingRoute
   '/shop': typeof ShopRoute
+  '/size-guide': typeof SizeGuideRoute
   '/story': typeof StoryRoute
+  '/wholesale': typeof WholesaleRoute
   '/product/$id': typeof ProductIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/collaborations': typeof CollaborationsRoute
+  '/contact': typeof ContactRoute
+  '/craft': typeof CraftRoute
+  '/faq': typeof FaqRoute
+  '/heritage': typeof HeritageRoute
+  '/kids': typeof KidsRoute
+  '/responsibility': typeof ResponsibilityRoute
+  '/returns': typeof ReturnsRoute
+  '/shipping': typeof ShippingRoute
   '/shop': typeof ShopRoute
+  '/size-guide': typeof SizeGuideRoute
   '/story': typeof StoryRoute
+  '/wholesale': typeof WholesaleRoute
   '/product/$id': typeof ProductIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/shop' | '/story' | '/product/$id'
+  fullPaths:
+    | '/'
+    | '/collaborations'
+    | '/contact'
+    | '/craft'
+    | '/faq'
+    | '/heritage'
+    | '/kids'
+    | '/responsibility'
+    | '/returns'
+    | '/shipping'
+    | '/shop'
+    | '/size-guide'
+    | '/story'
+    | '/wholesale'
+    | '/product/$id'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/shop' | '/story' | '/product/$id'
-  id: '__root__' | '/' | '/shop' | '/story' | '/product/$id'
+  to:
+    | '/'
+    | '/collaborations'
+    | '/contact'
+    | '/craft'
+    | '/faq'
+    | '/heritage'
+    | '/kids'
+    | '/responsibility'
+    | '/returns'
+    | '/shipping'
+    | '/shop'
+    | '/size-guide'
+    | '/story'
+    | '/wholesale'
+    | '/product/$id'
+  id:
+    | '__root__'
+    | '/'
+    | '/collaborations'
+    | '/contact'
+    | '/craft'
+    | '/faq'
+    | '/heritage'
+    | '/kids'
+    | '/responsibility'
+    | '/returns'
+    | '/shipping'
+    | '/shop'
+    | '/size-guide'
+    | '/story'
+    | '/wholesale'
+    | '/product/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  CollaborationsRoute: typeof CollaborationsRoute
+  ContactRoute: typeof ContactRoute
+  CraftRoute: typeof CraftRoute
+  FaqRoute: typeof FaqRoute
+  HeritageRoute: typeof HeritageRoute
+  KidsRoute: typeof KidsRoute
+  ResponsibilityRoute: typeof ResponsibilityRoute
+  ReturnsRoute: typeof ReturnsRoute
+  ShippingRoute: typeof ShippingRoute
   ShopRoute: typeof ShopRoute
+  SizeGuideRoute: typeof SizeGuideRoute
   StoryRoute: typeof StoryRoute
+  WholesaleRoute: typeof WholesaleRoute
   ProductIdRoute: typeof ProductIdRoute
 }
 
@@ -78,6 +234,69 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/collaborations': {
+      id: '/collaborations'
+      path: '/collaborations'
+      fullPath: '/collaborations'
+      preLoaderRoute: typeof CollaborationsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/contact': {
+      id: '/contact'
+      path: '/contact'
+      fullPath: '/contact'
+      preLoaderRoute: typeof ContactRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/craft': {
+      id: '/craft'
+      path: '/craft'
+      fullPath: '/craft'
+      preLoaderRoute: typeof CraftRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/faq': {
+      id: '/faq'
+      path: '/faq'
+      fullPath: '/faq'
+      preLoaderRoute: typeof FaqRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/heritage': {
+      id: '/heritage'
+      path: '/heritage'
+      fullPath: '/heritage'
+      preLoaderRoute: typeof HeritageRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/kids': {
+      id: '/kids'
+      path: '/kids'
+      fullPath: '/kids'
+      preLoaderRoute: typeof KidsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/responsibility': {
+      id: '/responsibility'
+      path: '/responsibility'
+      fullPath: '/responsibility'
+      preLoaderRoute: typeof ResponsibilityRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/returns': {
+      id: '/returns'
+      path: '/returns'
+      fullPath: '/returns'
+      preLoaderRoute: typeof ReturnsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/shipping': {
+      id: '/shipping'
+      path: '/shipping'
+      fullPath: '/shipping'
+      preLoaderRoute: typeof ShippingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/shop': {
       id: '/shop'
       path: '/shop'
@@ -85,11 +304,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ShopRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/size-guide': {
+      id: '/size-guide'
+      path: '/size-guide'
+      fullPath: '/size-guide'
+      preLoaderRoute: typeof SizeGuideRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/story': {
       id: '/story'
       path: '/story'
       fullPath: '/story'
       preLoaderRoute: typeof StoryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/wholesale': {
+      id: '/wholesale'
+      path: '/wholesale'
+      fullPath: '/wholesale'
+      preLoaderRoute: typeof WholesaleRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/product/$id': {
@@ -104,8 +337,19 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  CollaborationsRoute: CollaborationsRoute,
+  ContactRoute: ContactRoute,
+  CraftRoute: CraftRoute,
+  FaqRoute: FaqRoute,
+  HeritageRoute: HeritageRoute,
+  KidsRoute: KidsRoute,
+  ResponsibilityRoute: ResponsibilityRoute,
+  ReturnsRoute: ReturnsRoute,
+  ShippingRoute: ShippingRoute,
   ShopRoute: ShopRoute,
+  SizeGuideRoute: SizeGuideRoute,
   StoryRoute: StoryRoute,
+  WholesaleRoute: WholesaleRoute,
   ProductIdRoute: ProductIdRoute,
 }
 export const routeTree = rootRouteImport
