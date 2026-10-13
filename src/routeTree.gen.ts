@@ -23,7 +23,6 @@ import { Route as ShopRouteImport } from './routes/shop'
 import { Route as SizeGuideRouteImport } from './routes/size-guide'
 import { Route as StoryRouteImport } from './routes/story'
 import { Route as WholesaleRouteImport } from './routes/wholesale'
-import { Route as ProductHandleRouteImport } from './routes/product.$handle'
 import { Route as ProductIdRouteImport } from './routes/product.$id'
 
 const IndexRoute = IndexRouteImport.update({
@@ -96,11 +95,6 @@ const WholesaleRoute = WholesaleRouteImport.update({
   path: '/wholesale',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ProductHandleRoute = ProductHandleRouteImport.update({
-  id: '/product/$handle',
-  path: '/product/$handle',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const ProductIdRoute = ProductIdRouteImport.update({
   id: '/product/$id',
   path: '/product/$id',
@@ -122,7 +116,6 @@ export interface FileRoutesByFullPath {
   '/size-guide': typeof SizeGuideRoute
   '/story': typeof StoryRoute
   '/wholesale': typeof WholesaleRoute
-  '/product/$handle': typeof ProductHandleRoute
   '/product/$id': typeof ProductIdRoute
 }
 export interface FileRoutesByTo {
@@ -140,7 +133,6 @@ export interface FileRoutesByTo {
   '/size-guide': typeof SizeGuideRoute
   '/story': typeof StoryRoute
   '/wholesale': typeof WholesaleRoute
-  '/product/$handle': typeof ProductHandleRoute
   '/product/$id': typeof ProductIdRoute
 }
 export interface FileRoutesById {
@@ -159,7 +151,6 @@ export interface FileRoutesById {
   '/size-guide': typeof SizeGuideRoute
   '/story': typeof StoryRoute
   '/wholesale': typeof WholesaleRoute
-  '/product/$handle': typeof ProductHandleRoute
   '/product/$id': typeof ProductIdRoute
 }
 export interface FileRouteTypes {
@@ -179,7 +170,6 @@ export interface FileRouteTypes {
     | '/size-guide'
     | '/story'
     | '/wholesale'
-    | '/product/$handle'
     | '/product/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -197,7 +187,6 @@ export interface FileRouteTypes {
     | '/size-guide'
     | '/story'
     | '/wholesale'
-    | '/product/$handle'
     | '/product/$id'
   id:
     | '__root__'
@@ -215,7 +204,6 @@ export interface FileRouteTypes {
     | '/size-guide'
     | '/story'
     | '/wholesale'
-    | '/product/$handle'
     | '/product/$id'
   fileRoutesById: FileRoutesById
 }
@@ -234,7 +222,6 @@ export interface RootRouteChildren {
   SizeGuideRoute: typeof SizeGuideRoute
   StoryRoute: typeof StoryRoute
   WholesaleRoute: typeof WholesaleRoute
-  ProductHandleRoute: typeof ProductHandleRoute
   ProductIdRoute: typeof ProductIdRoute
 }
 
@@ -338,13 +325,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof WholesaleRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/product/$handle': {
-      id: '/product/$handle'
-      path: '/product/$handle'
-      fullPath: '/product/$handle'
-      preLoaderRoute: typeof ProductHandleRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/product/$id': {
       id: '/product/$id'
       path: '/product/$id'
@@ -370,7 +350,6 @@ const rootRouteChildren: RootRouteChildren = {
   SizeGuideRoute: SizeGuideRoute,
   StoryRoute: StoryRoute,
   WholesaleRoute: WholesaleRoute,
-  ProductHandleRoute: ProductHandleRoute,
   ProductIdRoute: ProductIdRoute,
 }
 export const routeTree = rootRouteImport
