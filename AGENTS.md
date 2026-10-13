@@ -10,7 +10,8 @@
 <!-- LOVABLE:END -->
 
 ## Storefront architecture
-- Keep catalog data in a shared browser-safe module and shopping state in a root-level React provider so route navigation preserves the current bag and favorites.
+- Product catalog comes from the Shopify Storefront API (src/lib/shopify.ts, API version 2025-07) — never reintroduce a local sample catalog or mock products.
+- Bag state lives in a zustand store (src/stores/cart-store.ts, persisted to localStorage) so route navigation preserves it; checkout always goes through a Storefront API cart checkout URL opened in a new tab.
+- Favorites stay in the root-level React provider (src/components/store-context.tsx) so they survive navigation.
 - Use dedicated content routes for the storefront, collections, product details, and brand story so navigation and page metadata remain distinct.
-- Treat the catalog as an explicit sample preview: do not collect payments or claim newsletter subscriptions are saved until real commerce services are connected.
-- Store supplied editorial page copy in a shared browser-safe content module, with thin dedicated route files and a reusable page layout to maintain consistent presentation and unique metadata.
+- Store supplied editorial page copy in a shared browser-safe content module (src/lib/brand-content.ts), with thin dedicated route files and a reusable page layout to maintain consistent presentation and unique metadata.
