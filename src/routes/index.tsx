@@ -1,24 +1,20 @@
-import { createFileRoute } from "@tanstack/react-router";
-
-// No head() here: the home route inherits title/description/og/twitter from
-// __root.tsx, and ships no og:image so serve-time hosting can inject the
-// project's social preview (explicit og:image or latest screenshot).
-export const Route = createFileRoute("/")({
-  component: Index,
-});
-
-// IMPORTANT: Replace this placeholder. See ./README.md for routing conventions.
-function Index() {
-  return (
-    <div
-      className="flex min-h-screen items-center justify-center"
-      style={{ backgroundColor: "#fcfbf8" }}
-    >
-      <img
-        data-lovable-blank-page-placeholder="REMOVE_THIS"
-        src="https://cdn.gpteng.co/blank-app-v1.svg"
-        alt="Your app will live here!"
-      />
-    </div>
-  );
-}
+import {createFileRoute,Link} from '@tanstack/react-router';
+import {ArrowRight,ArrowUpRight} from 'lucide-react';
+import {useState} from 'react';
+import {Button} from '@/components/ui/button';
+import {ProductCard} from '@/components/product-card';
+import {Benefits} from '@/components/store-shell';
+import {products} from '@/lib/catalog';
+import campaign from '@/assets/campaign.jpg';
+import story from '@/assets/story.jpg';
+import amara from '@/assets/amara.jpg';
+import kofi from '@/assets/kofi.jpg';
+export const Route=createFileRoute('/')({head:()=>({meta:[{title:'Threads of Africa — Culture, Woven Into Everyday'},{name:'description',content:'Discover contemporary African-inspired clothing at Threads of Africa. Expressive prints, considered silhouettes, and a story in every thread.'},{property:'og:title',content:'Threads of Africa — Culture, Woven Into Everyday'},{property:'og:description',content:'Contemporary clothing. Timeless culture. Explore the Heritage Collection.'},{property:'og:type',content:'website'},{name:'twitter:card',content:'summary_large_image'}]}),component:Home});
+function Home(){const [email,setEmail]=useState('');const [notice,setNotice]=useState(false);return <main>
+<section className="hero"><img className="hero-photo" src={campaign} alt="Threads of Africa Heritage Collection — three models in contemporary African-inspired designs" width={1920} height={1024} fetchPriority="high"/><div className="site-width hero-copy"><span className="eyebrow">The Heritage Collection / 2026</span><h1>Threads of Africa.<br/>Wear your roots.</h1><p className="hero-sub">Bold expressions. Timeless stories.<br/>African-inspired pieces for the way you live.</p><Button asChild size="lg" className="h-12 rounded-none px-7 text-xs"><Link to="/shop" search={{category:'All'}}>Discover the collection <ArrowRight className="ml-4"/></Link></Button><Link to="/story" className="text-xs mt-5 underline underline-offset-4">More than fashion. A connection.</Link></div><div className="hero-pagination" aria-hidden="true"><span/><span className="opacity-30"/><span className="opacity-30"/></div><div className="hero-note">ROOTED IN AFRICA. REIMAGINED FOR TODAY.</div></section>
+<Benefits/>
+<section className="site-width py-14 sm:py-16"><div className="section-heading"><div><p className="eyebrow text-muted-foreground">The pieces you’ll reach for</p><h2>A new kind of everyday.</h2></div><Button asChild variant="link" className="p-0 text-xs"><Link to="/shop" search={{category:'All'}}>Shop the edit <ArrowUpRight/></Link></Button></div><div className="product-grid">{products.map(p=><ProductCard key={p.id} product={p}/>)}</div></section>
+<section className="editorial"><img className="editorial-image" src={story} alt="Expressive African print and contemporary linen clothing" width={1536} height={1024} loading="lazy"/><div className="editorial-copy"><span className="eyebrow">Our roots run deep</span><h2>More than a look.<br/>A way to belong.</h2><p>There’s a story in every pattern. A connection in every thread. We bring the richness of African expression into modern silhouettes, made for wherever your story takes you.</p><Button asChild variant="outline" className="rounded-none bg-transparent h-11 px-6 text-xs"><Link to="/story">The story behind the threads <ArrowUpRight className="ml-2"/></Link></Button></div></section>
+<section className="site-width py-14 sm:py-16"><div className="section-heading"><div><p className="eyebrow text-muted-foreground">Your style. Your story.</p><h2>Find your expression.</h2></div><span className="text-xs text-muted-foreground hidden sm:block">A little heritage. Entirely you.</span></div><div className="collection-grid"><Link to="/shop" search={{category:'Women'}} className="collection-tile"><img src={amara} alt="Women’s Ankara dress collection" loading="lazy" width={512} height={1024}/><div className="collection-label"><div><p className="eyebrow mb-2">Bold. Beautiful. Unapologetic.</p><h3>For her.</h3></div><ArrowUpRight/></div></Link><Link to="/shop" search={{category:'Men'}} className="collection-tile"><img src={kofi} alt="Men’s heritage shirt collection" loading="lazy" width={512} height={1024}/><div className="collection-label"><div><p className="eyebrow mb-2">Considered. Confident. Original.</p><h3>For him.</h3></div><ArrowUpRight/></div></Link></div></section>
+<section className="newsletter"><div className="site-width newsletter-inner"><div><span className="eyebrow">Stay connected to the threads</span><h2>Good stories deserve to be shared.</h2><p>New collections, fresh inspiration, and a little culture in your inbox.</p></div><form onSubmit={e=>{e.preventDefault();setNotice(true)}}><div className="newsletter-input"><input type="email" required aria-label="Email address" placeholder="Your email address" value={email} onChange={e=>{setEmail(e.target.value);setNotice(false)}}/><Button type="submit" variant="inverse" aria-label="Join the mailing list"><ArrowRight/></Button></div><p className="text-[10px] mt-3">{notice?'Mailing list signups will open with the real collection. Stay tuned.':'By subscribing, you agree to our privacy policy. Unsubscribe anytime.'}</p></form></div></section>
+</main>}
