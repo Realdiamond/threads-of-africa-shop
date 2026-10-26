@@ -6,7 +6,7 @@ import type { CartResult } from "@/lib/cart-types";
 import { addToCart, createCart, getCart, removeCartLine, updateCartLine } from "./cart.server";
 import { fetchActiveProducts } from "./catalog.server";
 import { startCheckout, type CheckoutResult } from "./checkout.server";
-import { errorFields, log } from "./log.server";
+import { guarded } from "./guarded.server";
 import { tooManyRequests } from "./rate-limit.server";
 
 const id = z.string().uuid();
@@ -31,16 +31,6 @@ const cartRateLimited = (): CartResult => ({
 
 const hit = (rule: (typeof limits)[keyof typeof limits]) =>
   tooManyRequests(rule.scope, rule.limit, rule.windowMs);
-
-// Unexpected failures are logged in full but only a generic message reaches the browser.
-async function guarded<T>(name: string, run: () => Promise<T>): Promise<T> {
-  try {
-    return await run();
-  } catch (error) {
-    log("error", `${name} failed`, errorFields(error));
-    throw new Error("Something went wrong. Please try again.");
-  }
-}
 
 export const listProductsFn = createServerFn({ method: "GET" }).handler(() =>
   guarded("listProducts", () => fetchActiveProducts()),

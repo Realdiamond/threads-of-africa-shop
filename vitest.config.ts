@@ -9,6 +9,8 @@ export default defineConfig({
     globals: true,
     setupFiles: ["./src/test/setup.ts"],
     include: ["src/**/*.{test,spec}.{ts,tsx}"],
+    // The database suites share one test database, so their files must not run at the same time.
+    fileParallelism: false,
   },
   resolve: {
     alias: { "@": path.resolve(__dirname, "./src") },

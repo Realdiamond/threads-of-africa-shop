@@ -15,7 +15,8 @@
     "start": "node scripts/migrate.mjs && node .output/server/index.mjs",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "node scripts/migrate.mjs",
-    "db:seed": "tsx scripts/seed.ts"
+    "db:seed": "tsx scripts/seed.ts",
+    "admin:create": "tsx scripts/create-admin.ts"
   },
   "overrides": {
     "rolldown": "1.2.1"

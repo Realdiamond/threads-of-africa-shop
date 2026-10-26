@@ -4,6 +4,7 @@ import {
   Link,
   createRootRouteWithContext,
   useRouter,
+  useRouterState,
   HeadContent,
   Scripts,
   type ErrorComponentProps,
@@ -122,14 +123,17 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  const pathname = useRouterState({ select: (state) => state.location.pathname });
+  // The admin area has its own layout; the shop's header and footer would get in the way.
+  const isAdmin = pathname === "/admin" || pathname.startsWith("/admin/");
   useCartSync();
 
   return (
     <QueryClientProvider client={queryClient}>
       <StoreProvider>
-        <StoreHeader />
+        {!isAdmin && <StoreHeader />}
         <Outlet />
-        <StoreFooter />
+        {!isAdmin && <StoreFooter />}
       </StoreProvider>
     </QueryClientProvider>
   );

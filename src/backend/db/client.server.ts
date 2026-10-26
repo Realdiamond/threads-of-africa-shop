@@ -5,6 +5,8 @@ import { errorFields, log } from "../log.server";
 import * as schema from "./schema";
 
 export type Db = NodePgDatabase<typeof schema>;
+// Either the database or an open transaction: lets helpers run inside the caller's transaction.
+export type Executor = Pick<Db, "select" | "insert" | "update" | "delete">;
 
 let pool: Pool | undefined;
 let db: Db | undefined;

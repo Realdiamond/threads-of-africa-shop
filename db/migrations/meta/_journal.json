@@ -15,6 +15,13 @@
       "when": 1793022611542,
       "tag": "0001_catalog_and_carts",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1793026142495,
+      "tag": "0002_admin_foundation",
+      "breakpoints": true
     }
   ]
 }

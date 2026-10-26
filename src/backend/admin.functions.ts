@@ -1,0 +1,283 @@
+import { createMiddleware, createServerFn } from "@tanstack/react-start";
+import { z } from "zod";
+
+import { adminDashboard } from "./admin/dashboard.server";
+import { recordAudit, recentAudit } from "./admin/audit.server";
+import {
+  deleteAdminCategory,
+  deleteAdminProduct,
+  getAdminProduct,
+  listAdminCategories,
+  listAdminProducts,
+  saveAdminCategory,
+  saveAdminProduct,
+  setAdminProductStatus,
+  setVariantStock,
+} from "./admin/product-admin.server";
+import {
+  createAdminUser,
+  disableAdminUser,
+  enableAdminUser,
+  listAdminUsers,
+  resetAdminPassword,
+  setAdminRole,
+} from "./admin/users.server";
+import { changePassword, endSession, login, normaliseEmail } from "./auth/admin-auth.server";
+import {
+  clearSessionCookie,
+  currentAdmin,
+  readSessionToken,
+  setSessionCookie,
+} from "./auth/session-cookie.server";
+import { getDb } from "./db/client.server";
+import { guarded } from "./guarded.server";
+import { log } from "./log.server";
+import { tooManyRequests, withinRateLimit } from "./rate-limit.server";
+
+const FIFTEEN_MINUTES = 15 * 60 * 1000;
+
+// Three levels of access, each a separate gate so a function must say which one it needs:
+//   anyAdmin    signed in (including someone who still has to set a password)
+//   activeAdmin signed in and past the forced password change
+//   owner       an active owner
+// An unauthenticated or forbidden call throws; the admin screens turn that into a sign-in prompt.
+const anyAdmin = createMiddleware({ type: "function" }).server(async ({ next }) => {
+  const admin = await currentAdmin();
+  if (!admin) throw new Error("UNAUTHENTICATED");
+  return next({ context: { admin } });
+});
+
+const activeAdmin = createMiddleware({ type: "function" })
+  .middleware([anyAdmin])
+  .server(async ({ next, context }) => {
+    if (context.admin.status === "invited") throw new Error("PASSWORD_CHANGE_REQUIRED");
+    return next();
+  });
+
+const ownerOnly = createMiddleware({ type: "function" })
+  .middleware([activeAdmin])
+  .server(async ({ next, context }) => {
+    if (context.admin.role !== "owner") throw new Error("FORBIDDEN");
+    return next();
+  });
+
+const id = z.string().uuid();
+const productStatus = z.enum(["draft", "active", "archived"]);
+
+const productInput = z.object({
+  id: id.optional(),
+  version: z.number().int().min(1).optional(),
+  handle: z.string().min(1).max(100),
+  title: z.string().min(1).max(120),
+  description: z.string().max(5000),
+  details: z.string().max(3000),
+  materialsCare: z.string().max(3000),
+  categoryId: id,
+  tags: z.array(z.string().trim().min(1).max(40)).max(10),
+  status: productStatus,
+  sortOrder: z.number().int().min(0).max(100_000),
+  variants: z
+    .array(
+      z.object({
+        id: id.optional(),
+        sku: z.string().max(40),
+        size: z.string().max(20),
+        color: z.string().max(40),
+        priceCents: z.number().int().min(0).max(10_000_000),
+        stock: z.number().int().min(0).max(100_000),
+      }),
+    )
+    .max(60),
+  images: z.array(z.object({ url: z.string().max(200), alt: z.string().max(200) })).max(10),
+});
+
+// ---- Sign in / out -------------------------------------------------------------------------
+
+export const getAdminSessionFn = createServerFn({ method: "POST" }).handler(() =>
+  guarded("getAdminSession", async () => ({ admin: await currentAdmin() })),
+);
+
+export const adminLoginFn = createServerFn({ method: "POST" })
+  .validator(z.object({ email: z.string().max(254), password: z.string().min(1).max(200) }))
+  .handler(({ data }) =>
+    guarded("adminLogin", async () => {
+      const email = normaliseEmail(data.email);
+      // Throttled per address and per account: attackers spread across addresses still hit the account limit.
+      if (
+        tooManyRequests("admin-login-ip", 30, FIFTEEN_MINUTES) ||
+        !withinRateLimit(`admin-login-email:${email}`, 10, FIFTEEN_MINUTES)
+      ) {
+        return {
+          ok: false as const,
+          message: "Too many attempts. Wait a few minutes and try again.",
+        };
+      }
+      const result = await login(email, data.password);
+      if (!result.ok) {
+        log("warn", "admin login failed", { email });
+        return { ok: false as const, message: "Wrong email or password." };
+      }
+      setSessionCookie(result.token);
+      return { ok: true as const, admin: result.admin };
+    }),
+  );
+
+export const adminLogoutFn = createServerFn({ method: "POST" }).handler(() =>
+  guarded("adminLogout", async () => {
+    const admin = await currentAdmin();
+    const token = readSessionToken();
+    if (token) await endSession(token);
+    if (admin) await recordAudit(getDb(), admin, "logout", "session", "", "Signed out");
+    clearSessionCookie();
+    return { ok: true as const };
+  }),
+);
+
+export const adminChangePasswordFn = createServerFn({ method: "POST" })
+  .middleware([anyAdmin])
+  .validator(
+    z.object({
+      currentPassword: z.string().min(1).max(200),
+      newPassword: z.string().min(1).max(200),
+    }),
+  )
+  .handler(({ data, context }) =>
+    guarded("adminChangePassword", async () => {
+      const token = readSessionToken();
+      if (!token) throw new Error("UNAUTHENTICATED");
+      if (tooManyRequests("admin-password", 10, FIFTEEN_MINUTES)) {
+        return {
+          ok: false as const,
+          message: "Too many attempts. Wait a few minutes and try again.",
+        };
+      }
+      const result = await changePassword(
+        context.admin,
+        token,
+        data.currentPassword,
+        data.newPassword,
+      );
+      return result.ok ? { ok: true as const } : { ok: false as const, message: result.message };
+    }),
+  );
+
+// ---- Dashboard -----------------------------------------------------------------------------
+
+export const adminDashboardFn = createServerFn({ method: "POST" })
+  .middleware([activeAdmin])
+  .handler(() => guarded("adminDashboard", () => adminDashboard()));
+
+export const adminActivityFn = createServerFn({ method: "POST" })
+  .middleware([activeAdmin])
+  .handler(() =>
+    guarded("adminActivity", async () => ({ entries: await recentAudit(getDb(), 100) })),
+  );
+
+// ---- Products ------------------------------------------------------------------------------
+
+export const adminListProductsFn = createServerFn({ method: "POST" })
+  .middleware([activeAdmin])
+  .validator(z.object({ status: productStatus.optional(), search: z.string().max(100).optional() }))
+  .handler(({ data }) => guarded("adminListProducts", () => listAdminProducts(data)));
+
+export const adminGetProductFn = createServerFn({ method: "POST" })
+  .middleware([activeAdmin])
+  .validator(z.object({ id }))
+  .handler(({ data }) => guarded("adminGetProduct", () => getAdminProduct(data.id)));
+
+export const adminSaveProductFn = createServerFn({ method: "POST" })
+  .middleware([activeAdmin])
+  .validator(productInput)
+  .handler(({ data, context }) =>
+    guarded("adminSaveProduct", () => saveAdminProduct(context.admin, data)),
+  );
+
+export const adminSetProductStatusFn = createServerFn({ method: "POST" })
+  .middleware([activeAdmin])
+  .validator(z.object({ id, status: productStatus }))
+  .handler(({ data, context }) =>
+    guarded("adminSetProductStatus", () =>
+      setAdminProductStatus(context.admin, data.id, data.status),
+    ),
+  );
+
+export const adminDeleteProductFn = createServerFn({ method: "POST" })
+  .middleware([activeAdmin])
+  .validator(z.object({ id }))
+  .handler(({ data, context }) =>
+    guarded("adminDeleteProduct", () => deleteAdminProduct(context.admin, data.id)),
+  );
+
+export const adminSetStockFn = createServerFn({ method: "POST" })
+  .middleware([activeAdmin])
+  .validator(z.object({ variantId: id, stock: z.number().int().min(0).max(100_000) }))
+  .handler(({ data, context }) =>
+    guarded("adminSetStock", () => setVariantStock(context.admin, data.variantId, data.stock)),
+  );
+
+// ---- Categories ----------------------------------------------------------------------------
+
+export const adminListCategoriesFn = createServerFn({ method: "POST" })
+  .middleware([activeAdmin])
+  .handler(() => guarded("adminListCategories", () => listAdminCategories()));
+
+export const adminSaveCategoryFn = createServerFn({ method: "POST" })
+  .middleware([activeAdmin])
+  .validator(z.object({ id: id.optional(), name: z.string().min(1).max(60) }))
+  .handler(({ data, context }) =>
+    guarded("adminSaveCategory", () => saveAdminCategory(context.admin, data)),
+  );
+
+export const adminDeleteCategoryFn = createServerFn({ method: "POST" })
+  .middleware([activeAdmin])
+  .validator(z.object({ id }))
+  .handler(({ data, context }) =>
+    guarded("adminDeleteCategory", () => deleteAdminCategory(context.admin, data.id)),
+  );
+
+// ---- Team (owners only) --------------------------------------------------------------------
+
+export const adminListUsersFn = createServerFn({ method: "POST" })
+  .middleware([ownerOnly])
+  .handler(({ context }) => guarded("adminListUsers", () => listAdminUsers(context.admin)));
+
+export const adminCreateUserFn = createServerFn({ method: "POST" })
+  .middleware([ownerOnly])
+  .validator(
+    z.object({
+      name: z.string().min(1).max(80),
+      email: z.string().max(254),
+      role: z.enum(["owner", "staff"]),
+    }),
+  )
+  .handler(({ data, context }) =>
+    guarded("adminCreateUser", () => createAdminUser(context.admin, data)),
+  );
+
+export const adminSetRoleFn = createServerFn({ method: "POST" })
+  .middleware([ownerOnly])
+  .validator(z.object({ userId: id, role: z.enum(["owner", "staff"]) }))
+  .handler(({ data, context }) =>
+    guarded("adminSetRole", () => setAdminRole(context.admin, data.userId, data.role)),
+  );
+
+export const adminDisableUserFn = createServerFn({ method: "POST" })
+  .middleware([ownerOnly])
+  .validator(z.object({ userId: id }))
+  .handler(({ data, context }) =>
+    guarded("adminDisableUser", () => disableAdminUser(context.admin, data.userId)),
+  );
+
+export const adminEnableUserFn = createServerFn({ method: "POST" })
+  .middleware([ownerOnly])
+  .validator(z.object({ userId: id }))
+  .handler(({ data, context }) =>
+    guarded("adminEnableUser", () => enableAdminUser(context.admin, data.userId)),
+  );
+
+export const adminResetPasswordFn = createServerFn({ method: "POST" })
+  .middleware([ownerOnly])
+  .validator(z.object({ userId: id }))
+  .handler(({ data, context }) =>
+    guarded("adminResetPassword", () => resetAdminPassword(context.admin, data.userId)),
+  );

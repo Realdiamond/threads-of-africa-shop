@@ -1,6 +1,7 @@
 import { relations, sql, type SQL } from "drizzle-orm";
 import {
   check,
+  customType,
   index,
   integer,
   jsonb,
@@ -59,6 +60,11 @@ export const products = pgTable(
       .default(sql`'{}'::text[]`),
     status: productStatus("status").notNull().default("draft"),
     sortOrder: integer("sort_order").notNull().default(0),
+    // Fit notes and fabric/care text shown on the product page; empty falls back to generic copy.
+    details: text("details").notNull().default(""),
+    materialsCare: text("materials_care").notNull().default(""),
+    // Bumped on every save so two admins cannot silently overwrite each other.
+    version: integer("version").notNull().default(1),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },
@@ -117,6 +123,7 @@ export const productImages = pgTable(
   },
   (t) => [
     check("product_images_url_not_blank", sql`length(btrim(${t.url})) > 0`),
+    check("product_images_url_local", sql`${t.url} ~ '^/(media|products)/[A-Za-z0-9._-]+$'`),
     index("product_images_product_position_idx").on(t.productId, t.position),
   ],
 );
@@ -183,3 +190,95 @@ export const cartLinesRelations = relations(cartLines, ({ one }) => ({
   cart: one(carts, { fields: [cartLines.cartId], references: [carts.id] }),
   variant: one(variants, { fields: [cartLines.variantId], references: [variants.id] }),
 }));
+
+export const adminRole = pgEnum("admin_role", ["owner", "staff"]);
+// invited = holds a temporary password and must set their own before doing anything else.
+export const adminStatus = pgEnum("admin_status", ["invited", "active", "disabled"]);
+
+const bytea = customType<{ data: Buffer; driverData: Buffer }>({
+  dataType() {
+    return "bytea";
+  },
+});
+
+export const adminUsers = pgTable(
+  "admin_users",
+  {
+    id: id(),
+    email: text("email").notNull().unique(),
+    name: text("name").notNull(),
+    role: adminRole("role").notNull().default("staff"),
+    status: adminStatus("status").notNull().default("invited"),
+    passwordHash: text("password_hash").notNull(),
+    // NULL means the person has never signed in.
+    lastLoginAt: timestamp("last_login_at", { withTimezone: true }),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [
+    check("admin_users_email_normalised", sql`${t.email} = lower(btrim(${t.email}))`),
+    check("admin_users_email_has_at", sql`position('@' in ${t.email}) > 1`),
+    check("admin_users_name_not_blank", sql`length(btrim(${t.name})) > 0`),
+  ],
+);
+
+// Only a hash of the session token is stored, so a database leak does not leak live sessions.
+export const adminSessions = pgTable(
+  "admin_sessions",
+  {
+    id: id(),
+    tokenHash: text("token_hash").notNull().unique(),
+    adminUserId: uuid("admin_user_id")
+      .notNull()
+      .references(() => adminUsers.id, { onDelete: "cascade" }),
+    createdAt: createdAt(),
+    lastUsedAt: timestamp("last_used_at", { withTimezone: true }).notNull().defaultNow(),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  },
+  (t) => [
+    index("admin_sessions_user_idx").on(t.adminUserId),
+    index("admin_sessions_expires_idx").on(t.expiresAt),
+  ],
+);
+
+// Uploaded product photos live in Postgres: no extra storage service to run or pay for.
+export const media = pgTable(
+  "media",
+  {
+    id: id(),
+    contentType: text("content_type").notNull(),
+    data: bytea("data").notNull(),
+    byteSize: integer("byte_size").notNull(),
+    sha256: text("sha256").notNull(),
+    filename: text("filename").notNull().default(""),
+    uploadedBy: uuid("uploaded_by").references(() => adminUsers.id, { onDelete: "set null" }),
+    createdAt: createdAt(),
+  },
+  (t) => [
+    check(
+      "media_content_type_allowed",
+      sql`${t.contentType} in ('image/jpeg', 'image/png', 'image/webp')`,
+    ),
+    check("media_size_range", sql`${t.byteSize} between 1 and 5242880`),
+    check("media_size_matches_data", sql`${t.byteSize} = octet_length(${t.data})`),
+  ],
+);
+
+// Append-only record of what admins did. The email is copied so history survives user removal.
+export const auditLog = pgTable(
+  "audit_log",
+  {
+    id: id(),
+    adminUserId: uuid("admin_user_id").references(() => adminUsers.id, { onDelete: "set null" }),
+    adminEmail: text("admin_email").notNull(),
+    action: text("action").notNull(),
+    entity: text("entity").notNull(),
+    entityId: text("entity_id").notNull().default(""),
+    summary: text("summary").notNull().default(""),
+    createdAt: createdAt(),
+  },
+  (t) => [
+    index("audit_log_created_idx").on(t.createdAt),
+    index("audit_log_entity_idx").on(t.entity, t.entityId),
+  ],
+);
