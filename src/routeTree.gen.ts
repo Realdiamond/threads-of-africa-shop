@@ -14,6 +14,7 @@ import { Route as CollaborationsRouteImport } from './routes/collaborations'
 import { Route as ContactRouteImport } from './routes/contact'
 import { Route as CraftRouteImport } from './routes/craft'
 import { Route as FaqRouteImport } from './routes/faq'
+import { Route as HealthzRouteImport } from './routes/healthz'
 import { Route as HeritageRouteImport } from './routes/heritage'
 import { Route as KidsRouteImport } from './routes/kids'
 import { Route as ResponsibilityRouteImport } from './routes/responsibility'
@@ -48,6 +49,11 @@ const CraftRoute = CraftRouteImport.update({
 const FaqRoute = FaqRouteImport.update({
   id: '/faq',
   path: '/faq',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const HealthzRoute = HealthzRouteImport.update({
+  id: '/healthz',
+  path: '/healthz',
   getParentRoute: () => rootRouteImport,
 } as any)
 const HeritageRoute = HeritageRouteImport.update({
@@ -107,6 +113,7 @@ export interface FileRoutesByFullPath {
   '/contact': typeof ContactRoute
   '/craft': typeof CraftRoute
   '/faq': typeof FaqRoute
+  '/healthz': typeof HealthzRoute
   '/heritage': typeof HeritageRoute
   '/kids': typeof KidsRoute
   '/responsibility': typeof ResponsibilityRoute
@@ -124,6 +131,7 @@ export interface FileRoutesByTo {
   '/contact': typeof ContactRoute
   '/craft': typeof CraftRoute
   '/faq': typeof FaqRoute
+  '/healthz': typeof HealthzRoute
   '/heritage': typeof HeritageRoute
   '/kids': typeof KidsRoute
   '/responsibility': typeof ResponsibilityRoute
@@ -142,6 +150,7 @@ export interface FileRoutesById {
   '/contact': typeof ContactRoute
   '/craft': typeof CraftRoute
   '/faq': typeof FaqRoute
+  '/healthz': typeof HealthzRoute
   '/heritage': typeof HeritageRoute
   '/kids': typeof KidsRoute
   '/responsibility': typeof ResponsibilityRoute
@@ -161,6 +170,7 @@ export interface FileRouteTypes {
     | '/contact'
     | '/craft'
     | '/faq'
+    | '/healthz'
     | '/heritage'
     | '/kids'
     | '/responsibility'
@@ -178,6 +188,7 @@ export interface FileRouteTypes {
     | '/contact'
     | '/craft'
     | '/faq'
+    | '/healthz'
     | '/heritage'
     | '/kids'
     | '/responsibility'
@@ -195,6 +206,7 @@ export interface FileRouteTypes {
     | '/contact'
     | '/craft'
     | '/faq'
+    | '/healthz'
     | '/heritage'
     | '/kids'
     | '/responsibility'
@@ -213,6 +225,7 @@ export interface RootRouteChildren {
   ContactRoute: typeof ContactRoute
   CraftRoute: typeof CraftRoute
   FaqRoute: typeof FaqRoute
+  HealthzRoute: typeof HealthzRoute
   HeritageRoute: typeof HeritageRoute
   KidsRoute: typeof KidsRoute
   ResponsibilityRoute: typeof ResponsibilityRoute
@@ -260,6 +273,13 @@ declare module '@tanstack/react-router' {
       path: '/faq'
       fullPath: '/faq'
       preLoaderRoute: typeof FaqRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/healthz': {
+      id: '/healthz'
+      path: '/healthz'
+      fullPath: '/healthz'
+      preLoaderRoute: typeof HealthzRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/heritage': {
@@ -341,6 +361,7 @@ const rootRouteChildren: RootRouteChildren = {
   ContactRoute: ContactRoute,
   CraftRoute: CraftRoute,
   FaqRoute: FaqRoute,
+  HealthzRoute: HealthzRoute,
   HeritageRoute: HeritageRoute,
   KidsRoute: KidsRoute,
   ResponsibilityRoute: ResponsibilityRoute,

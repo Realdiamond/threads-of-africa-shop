@@ -1,0 +1,426 @@
+{
+  "categories": [
+    {
+      "slug": "women",
+      "name": "Women"
+    },
+    {
+      "slug": "men",
+      "name": "Men"
+    }
+  ],
+  "products": [
+    {
+      "handle": "amara-ankara-maxi-dress",
+      "title": "Amara Ankara Maxi Dress",
+      "description": "A statement in every step. A sweeping maxi silhouette meets a sunlit geometric print, with a fitted bodice and beautifully flowing skirt.",
+      "category": "women",
+      "tags": [
+        "bestseller"
+      ],
+      "status": "active",
+      "images": [
+        {
+          "url": "/products/amara.jpg",
+          "alt": "Amara Ankara Maxi Dress"
+        }
+      ],
+      "variants": [
+        {
+          "sku": "TOA-AMARA-XS",
+          "title": "XS / Sunflower",
+          "priceCents": 12900,
+          "currency": "USD",
+          "stock": 10,
+          "selectedOptions": [
+            {
+              "name": "Size",
+              "value": "XS"
+            },
+            {
+              "name": "Color",
+              "value": "Sunflower"
+            }
+          ]
+        },
+        {
+          "sku": "TOA-AMARA-S",
+          "title": "S / Sunflower",
+          "priceCents": 12900,
+          "currency": "USD",
+          "stock": 10,
+          "selectedOptions": [
+            {
+              "name": "Size",
+              "value": "S"
+            },
+            {
+              "name": "Color",
+              "value": "Sunflower"
+            }
+          ]
+        },
+        {
+          "sku": "TOA-AMARA-M",
+          "title": "M / Sunflower",
+          "priceCents": 12900,
+          "currency": "USD",
+          "stock": 10,
+          "selectedOptions": [
+            {
+              "name": "Size",
+              "value": "M"
+            },
+            {
+              "name": "Color",
+              "value": "Sunflower"
+            }
+          ]
+        },
+        {
+          "sku": "TOA-AMARA-L",
+          "title": "L / Sunflower",
+          "priceCents": 12900,
+          "currency": "USD",
+          "stock": 10,
+          "selectedOptions": [
+            {
+              "name": "Size",
+              "value": "L"
+            },
+            {
+              "name": "Color",
+              "value": "Sunflower"
+            }
+          ]
+        },
+        {
+          "sku": "TOA-AMARA-XL",
+          "title": "XL / Sunflower",
+          "priceCents": 12900,
+          "currency": "USD",
+          "stock": 10,
+          "selectedOptions": [
+            {
+              "name": "Size",
+              "value": "XL"
+            },
+            {
+              "name": "Color",
+              "value": "Sunflower"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "handle": "kofi-heritage-shirt",
+      "title": "Kofi Heritage Shirt",
+      "description": "A fresh take on a timeless silhouette. Deep forest green, considered tailoring, and geometric trim come together in an effortlessly versatile shirt.",
+      "category": "men",
+      "tags": [
+        "new arrival"
+      ],
+      "status": "active",
+      "images": [
+        {
+          "url": "/products/kofi.jpg",
+          "alt": "Kofi Heritage Shirt"
+        }
+      ],
+      "variants": [
+        {
+          "sku": "TOA-KOFI-XS",
+          "title": "XS / Forest",
+          "priceCents": 8500,
+          "currency": "USD",
+          "stock": 10,
+          "selectedOptions": [
+            {
+              "name": "Size",
+              "value": "XS"
+            },
+            {
+              "name": "Color",
+              "value": "Forest"
+            }
+          ]
+        },
+        {
+          "sku": "TOA-KOFI-S",
+          "title": "S / Forest",
+          "priceCents": 8500,
+          "currency": "USD",
+          "stock": 10,
+          "selectedOptions": [
+            {
+              "name": "Size",
+              "value": "S"
+            },
+            {
+              "name": "Color",
+              "value": "Forest"
+            }
+          ]
+        },
+        {
+          "sku": "TOA-KOFI-M",
+          "title": "M / Forest",
+          "priceCents": 8500,
+          "currency": "USD",
+          "stock": 10,
+          "selectedOptions": [
+            {
+              "name": "Size",
+              "value": "M"
+            },
+            {
+              "name": "Color",
+              "value": "Forest"
+            }
+          ]
+        },
+        {
+          "sku": "TOA-KOFI-L",
+          "title": "L / Forest",
+          "priceCents": 8500,
+          "currency": "USD",
+          "stock": 10,
+          "selectedOptions": [
+            {
+              "name": "Size",
+              "value": "L"
+            },
+            {
+              "name": "Color",
+              "value": "Forest"
+            }
+          ]
+        },
+        {
+          "sku": "TOA-KOFI-XL",
+          "title": "XL / Forest",
+          "priceCents": 8500,
+          "currency": "USD",
+          "stock": 10,
+          "selectedOptions": [
+            {
+              "name": "Size",
+              "value": "XL"
+            },
+            {
+              "name": "Color",
+              "value": "Forest"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "handle": "zuri-two-piece-set",
+      "title": "Zuri Two-Piece Set",
+      "description": "Two pieces. Endless possibilities. An expressive rust-and-ivory print, a flattering cropped top, and flowing wide-leg trousers made to move with you.",
+      "category": "women",
+      "tags": [
+        "two-piece"
+      ],
+      "status": "active",
+      "images": [
+        {
+          "url": "/products/zuri.jpg",
+          "alt": "Zuri Two-Piece Set"
+        }
+      ],
+      "variants": [
+        {
+          "sku": "TOA-ZURI-XS",
+          "title": "XS / Terracotta",
+          "priceCents": 14500,
+          "currency": "USD",
+          "stock": 10,
+          "selectedOptions": [
+            {
+              "name": "Size",
+              "value": "XS"
+            },
+            {
+              "name": "Color",
+              "value": "Terracotta"
+            }
+          ]
+        },
+        {
+          "sku": "TOA-ZURI-S",
+          "title": "S / Terracotta",
+          "priceCents": 14500,
+          "currency": "USD",
+          "stock": 10,
+          "selectedOptions": [
+            {
+              "name": "Size",
+              "value": "S"
+            },
+            {
+              "name": "Color",
+              "value": "Terracotta"
+            }
+          ]
+        },
+        {
+          "sku": "TOA-ZURI-M",
+          "title": "M / Terracotta",
+          "priceCents": 14500,
+          "currency": "USD",
+          "stock": 10,
+          "selectedOptions": [
+            {
+              "name": "Size",
+              "value": "M"
+            },
+            {
+              "name": "Color",
+              "value": "Terracotta"
+            }
+          ]
+        },
+        {
+          "sku": "TOA-ZURI-L",
+          "title": "L / Terracotta",
+          "priceCents": 14500,
+          "currency": "USD",
+          "stock": 10,
+          "selectedOptions": [
+            {
+              "name": "Size",
+              "value": "L"
+            },
+            {
+              "name": "Color",
+              "value": "Terracotta"
+            }
+          ]
+        },
+        {
+          "sku": "TOA-ZURI-XL",
+          "title": "XL / Terracotta",
+          "priceCents": 14500,
+          "currency": "USD",
+          "stock": 10,
+          "selectedOptions": [
+            {
+              "name": "Size",
+              "value": "XL"
+            },
+            {
+              "name": "Color",
+              "value": "Terracotta"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "handle": "nala-statement-dress",
+      "title": "Nala Statement Dress",
+      "description": "Bold volume and an unforgettable print. Sculptural sleeves frame a vibrant silhouette, bringing a little celebration to the everyday.",
+      "category": "women",
+      "tags": [
+        "limited edit"
+      ],
+      "status": "active",
+      "images": [
+        {
+          "url": "/products/nala.jpg",
+          "alt": "Nala Statement Dress"
+        }
+      ],
+      "variants": [
+        {
+          "sku": "TOA-NALA-XS",
+          "title": "XS / Ember",
+          "priceCents": 11500,
+          "currency": "USD",
+          "stock": 10,
+          "selectedOptions": [
+            {
+              "name": "Size",
+              "value": "XS"
+            },
+            {
+              "name": "Color",
+              "value": "Ember"
+            }
+          ]
+        },
+        {
+          "sku": "TOA-NALA-S",
+          "title": "S / Ember",
+          "priceCents": 11500,
+          "currency": "USD",
+          "stock": 10,
+          "selectedOptions": [
+            {
+              "name": "Size",
+              "value": "S"
+            },
+            {
+              "name": "Color",
+              "value": "Ember"
+            }
+          ]
+        },
+        {
+          "sku": "TOA-NALA-M",
+          "title": "M / Ember",
+          "priceCents": 11500,
+          "currency": "USD",
+          "stock": 10,
+          "selectedOptions": [
+            {
+              "name": "Size",
+              "value": "M"
+            },
+            {
+              "name": "Color",
+              "value": "Ember"
+            }
+          ]
+        },
+        {
+          "sku": "TOA-NALA-L",
+          "title": "L / Ember",
+          "priceCents": 11500,
+          "currency": "USD",
+          "stock": 10,
+          "selectedOptions": [
+            {
+              "name": "Size",
+              "value": "L"
+            },
+            {
+              "name": "Color",
+              "value": "Ember"
+            }
+          ]
+        },
+        {
+          "sku": "TOA-NALA-XL",
+          "title": "XL / Ember",
+          "priceCents": 11500,
+          "currency": "USD",
+          "stock": 10,
+          "selectedOptions": [
+            {
+              "name": "Size",
+              "value": "XL"
+            },
+            {
+              "name": "Color",
+              "value": "Ember"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

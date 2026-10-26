@@ -2,7 +2,7 @@ import { Link } from '@tanstack/react-router';
 import { Heart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useStore } from './store-context';
-import { money, type Product } from '@/lib/shopify';
+import { money, type Product } from '@/lib/catalog';
 export function ProductCard({ product }: { product: Product }) {
   const { favorites, favorite } = useStore();
   const selected = favorites.includes(product.id);

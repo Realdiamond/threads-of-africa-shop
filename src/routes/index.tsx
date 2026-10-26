@@ -5,7 +5,7 @@ import {useSuspenseQuery} from '@tanstack/react-query';
 import {Button} from '@/components/ui/button';
 import {ProductCard,EmptyProducts} from '@/components/product-card';
 import {Benefits} from '@/components/store-shell';
-import {productsQueryOptions} from '@/lib/shopify';
+import {productsQueryOptions} from '@/lib/catalog';
 import campaign from '@/assets/campaign.jpg';
 import story from '@/assets/story.jpg';
 import amara from '@/assets/amara.jpg';
