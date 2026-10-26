@@ -1,10 +1,12 @@
 import { and, asc, desc, eq, inArray, or, sql } from "drizzle-orm";
 
+import type { LaunchChecklist } from "@/lib/admin-types";
 import type { OrderListRow } from "@/lib/order-types";
 
 import { getDb, type Db } from "../db/client.server";
 import { orders, products, variants } from "../db/schema";
 import { getSettings } from "../settings.server";
+import { launchChecklist } from "./launch.server";
 import { recentAudit, type AuditEntry } from "./audit.server";
 
 export type AdminDashboard = {
@@ -18,6 +20,7 @@ export type AdminDashboard = {
     stock: number;
   }>;
   recent: AuditEntry[];
+  launch: LaunchChecklist;
   // Orders where something went wrong that only a person can sort out.
   attention: Array<{
     id: string;
@@ -44,6 +47,7 @@ export async function adminDashboard(db: Db = getDb()): Promise<AdminDashboard> 
     paidRecently,
     latest,
     attention,
+    launch,
   ] = await Promise.all([
     db
       .select({ status: products.status, total: sql<number>`count(*)::int` })
@@ -131,6 +135,7 @@ export async function adminDashboard(db: Db = getDb()): Promise<AdminDashboard> 
       )
       .orderBy(desc(orders.createdAt))
       .limit(10),
+    launchChecklist(db),
   ]);
 
   const counts = { active: 0, draft: 0, archived: 0 };
@@ -141,6 +146,7 @@ export async function adminDashboard(db: Db = getDb()): Promise<AdminDashboard> 
     outOfStock: outOfStockRows[0]?.total ?? 0,
     lowStock,
     recent,
+    launch,
     attention,
     orders: {
       toShip: byStatus.get("paid") ?? 0,

@@ -9,6 +9,7 @@ import { subscribe, unsubscribeByToken } from "./newsletter.server";
 import { getSitePage } from "./pages.server";
 import { tooManyRequests } from "./rate-limit.server";
 import { getPublicSettings } from "./settings.server";
+import { siteUrl } from "./site-url.server";
 
 const TEN_MINUTES = 10 * 60 * 1000;
 const SLOW_DOWN = "Too many attempts. Please wait a few minutes and try again.";
@@ -65,3 +66,7 @@ export const unsubscribeFn = createServerFn({ method: "POST" })
       return { ok: await unsubscribeByToken(data.token) };
     }),
   );
+
+// The shop's public address, for links and tags that must be absolute (share previews, search
+// engines). It comes from SITE_URL, so it is the same on every page.
+export const getSiteUrlFn = createServerFn({ method: "GET" }).handler(() => siteUrl());

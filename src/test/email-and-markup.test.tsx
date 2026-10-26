@@ -153,7 +153,7 @@ describe("policy page formatting", () => {
     const html = render(
       "## Heading\n\nA **bold** and *soft* word with a [link](https://example.com).\n\n- one\n- two",
     );
-    expect(html).toContain("<h3");
+    expect(html).toContain("<h2");
     expect(html).toContain("<strong>bold</strong>");
     expect(html).toContain("<em>soft</em>");
     expect(html).toContain('<a href="https://example.com"');

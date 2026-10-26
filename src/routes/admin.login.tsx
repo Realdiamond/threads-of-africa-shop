@@ -36,7 +36,7 @@ function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-secondary/40 px-4">
+    <main className="flex min-h-screen items-center justify-center bg-secondary/40 px-4">
       <form
         onSubmit={submit}
         className="w-full max-w-sm space-y-5 rounded-lg border bg-background p-6 shadow-sm"
@@ -75,6 +75,6 @@ function LoginPage() {
           Forgotten your password? Ask an owner to reset it from the Team page.
         </p>
       </form>
-    </div>
+    </main>
   );
 }

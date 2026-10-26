@@ -41,7 +41,7 @@ export default defineConfig(({ command }) => ({
       },
     }),
     // Production runs as a plain Node server (Railway): `node .output/server/index.mjs`.
-    ...(command === "build" ? [nitro({ preset: "node-server" })] : []),
+    ...(command === "build" ? [nitro({ preset: "node-server", compressPublicAssets: true })] : []),
     viteReact(),
   ],
 }));

@@ -12,7 +12,7 @@ import {
 import type { ReactNode } from "react";
 
 import appCss from "../styles.css?url";
-import { getPublicSettingsFn } from "@/backend/site.functions";
+import { getPublicSettingsFn, getSiteUrlFn } from "@/backend/site.functions";
 import { StoreProvider } from "@/components/store-context";
 import { StoreHeader, StoreFooter } from "@/components/store-shell";
 import { WhatsAppButton } from "@/components/whatsapp-button";
@@ -79,13 +79,13 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   // Shop details (announcement, contact, social links) come from the admin settings. If they
   // cannot be loaded, the pages still render with the built-in defaults.
   loader: async () => {
-    try {
-      return { settings: await getPublicSettingsFn() };
-    } catch {
-      return { settings: FALLBACK_SETTINGS };
-    }
+    const [settings, siteUrl] = await Promise.all([
+      getPublicSettingsFn().catch(() => FALLBACK_SETTINGS),
+      getSiteUrlFn().catch(() => ""),
+    ]);
+    return { settings, siteUrl };
   },
-  head: () => ({
+  head: ({ loaderData }) => ({
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
@@ -98,6 +98,17 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { property: "og:description", content: "African roots. Contemporary expression." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
+      // Link previews (WhatsApp, Instagram, iMessage...) need an absolute address. Pages with
+      // their own picture (products) override this one.
+      ...(loaderData?.siteUrl
+        ? [
+            { property: "og:image", content: `${loaderData.siteUrl}/og-default.jpg` },
+            { property: "og:image:width", content: "1200" },
+            { property: "og:image:height", content: "630" },
+            { property: "og:site_name", content: "The Threads of Africa" },
+            { name: "twitter:image", content: `${loaderData.siteUrl}/og-default.jpg` },
+          ]
+        : []),
     ],
     links: [
       {
@@ -105,12 +116,6 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         href: appCss,
       },
       { rel: "icon", href: "/favicon.png", type: "image/png" },
-      { rel: "preconnect", href: "https://fonts.googleapis.com" },
-      { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
-      {
-        rel: "stylesheet",
-        href: "https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=Figtree:wght@400;500;600;700&display=swap",
-      },
     ],
   }),
   shellComponent: RootShell,

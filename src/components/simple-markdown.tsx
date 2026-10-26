@@ -47,7 +47,8 @@ export function SimpleMarkdown({ text }: { text: string }) {
         const heading = /^(#{1,3})\s+(.*)$/.exec(lines[0]!);
         if (heading && lines.length === 1) {
           const level = heading[1]!.length;
-          const Tag = level === 1 ? "h2" : level === 2 ? "h3" : "h4";
+          // The page title is the h1, so sections start at h2 whether written as # or ##.
+          const Tag = level <= 2 ? "h2" : "h3";
           return (
             <Tag key={key} className="pt-4 font-display text-xl text-foreground">
               {inline(heading[2]!, key)}
@@ -65,7 +66,7 @@ export function SimpleMarkdown({ text }: { text: string }) {
         }
         // A heading followed directly by text on the next line.
         if (heading) {
-          const Tag = heading[1]!.length === 1 ? "h2" : "h3";
+          const Tag = heading[1]!.length <= 2 ? "h2" : "h3";
           return (
             <div key={key}>
               <Tag className="pt-4 font-display text-xl text-foreground">

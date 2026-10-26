@@ -125,6 +125,26 @@ describe("toProduct", () => {
     expect(product.variants.map((v) => v.availableForSale)).toEqual([false, true]);
   });
 
+  it("carries every photo, in order, plus the longer product texts", () => {
+    const product = toProduct(
+      row({
+        details: "Relaxed fit.",
+        materialsCare: "100% cotton. Cold wash.",
+        images: [
+          { id: "i1", productId: "p1", url: "/media/a", alt: "Front", position: 0, createdAt: now },
+          { id: "i2", productId: "p1", url: "/media/b", alt: "", position: 1, createdAt: now },
+        ],
+      }),
+    );
+
+    expect(product.images).toEqual([
+      { url: "/media/a", alt: "Front" },
+      { url: "/media/b", alt: "Kofi Heritage Shirt" },
+    ]);
+    expect(product.details).toBe("Relaxed fit.");
+    expect(product.materialsCare).toBe("100% cotton. Cold wash.");
+  });
+
   it("falls back to the title for missing alt text and empty strings for missing extras", () => {
     const product = toProduct(row({ tags: [], images: [] }));
 

@@ -58,6 +58,9 @@ export function toProduct(row: ProductRow): Product {
     currencyCode: row.variants[0]?.currency ?? "USD",
     image: image?.url ?? "",
     imageAlt: image?.alt || row.title,
+    images: row.images.map((i) => ({ url: i.url, alt: i.alt || row.title })),
+    details: row.details,
+    materialsCare: row.materialsCare,
     options,
     variants,
   };

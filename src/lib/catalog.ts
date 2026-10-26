@@ -19,8 +19,13 @@ export type Product = {
   description: string;
   price: number;
   currencyCode: string;
+  // The first photo, used on cards; `images` holds all of them in the order the owner chose.
   image: string;
   imageAlt: string;
+  images: Array<{ url: string; alt: string }>;
+  // Longer text the owner fills in on the product's page in the admin.
+  details: string;
+  materialsCare: string;
   options: Array<{ name: string; values: string[] }>;
   variants: Variant[];
 };

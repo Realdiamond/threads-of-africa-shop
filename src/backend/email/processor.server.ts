@@ -117,3 +117,14 @@ export async function emailBacklog(db: Db = getDb()) {
   const count = (status: string) => rows.find((row) => row.status === status)?.total ?? 0;
   return { pending: count("pending"), failed: count("failed") };
 }
+
+// After the cause of a permanent failure is fixed (a wrong key, an unverified sending domain), puts
+// those emails back in the queue to be sent.
+export async function requeueFailedEmails(db: Db = getDb()): Promise<number> {
+  const rows = await db
+    .update(emailOutbox)
+    .set({ status: "pending", attempts: 0, nextAttemptAt: sql`now()` })
+    .where(eq(emailOutbox.status, "failed"))
+    .returning({ id: emailOutbox.id });
+  return rows.length;
+}

@@ -21,8 +21,10 @@ import { Route as KidsRouteImport } from './routes/kids'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as ResponsibilityRouteImport } from './routes/responsibility'
 import { Route as ReturnsRouteImport } from './routes/returns'
+import { Route as RobotsDottxtRouteImport } from './routes/robots[.]txt'
 import { Route as ShippingRouteImport } from './routes/shipping'
 import { Route as ShopRouteImport } from './routes/shop'
+import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as SizeGuideRouteImport } from './routes/size-guide'
 import { Route as StoryRouteImport } from './routes/story'
 import { Route as TermsRouteImport } from './routes/terms'
@@ -45,6 +47,7 @@ import { Route as AdminSubscribersRouteImport } from './routes/admin.subscribers
 import { Route as AdminTeamRouteImport } from './routes/admin.team'
 import { Route as CheckoutIndexRouteImport } from './routes/checkout.index'
 import { Route as CheckoutMockPayRouteImport } from './routes/checkout.mock-pay'
+import { Route as FeedsGoogleDotxmlRouteImport } from './routes/feeds.google[.]xml'
 import { Route as MediaIdRouteImport } from './routes/media.$id'
 import { Route as NewsletterUnsubscribeRouteImport } from './routes/newsletter.unsubscribe'
 import { Route as OrdersIdRouteImport } from './routes/orders.$id'
@@ -121,6 +124,11 @@ const ReturnsRoute = ReturnsRouteImport.update({
   path: '/returns',
   getParentRoute: () => rootRouteImport,
 } as any)
+const RobotsDottxtRoute = RobotsDottxtRouteImport.update({
+  id: '/robots.txt',
+  path: '/robots.txt',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ShippingRoute = ShippingRouteImport.update({
   id: '/shipping',
   path: '/shipping',
@@ -129,6 +137,11 @@ const ShippingRoute = ShippingRouteImport.update({
 const ShopRoute = ShopRouteImport.update({
   id: '/shop',
   path: '/shop',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
+  id: '/sitemap.xml',
+  path: '/sitemap.xml',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SizeGuideRoute = SizeGuideRouteImport.update({
@@ -241,6 +254,11 @@ const CheckoutMockPayRoute = CheckoutMockPayRouteImport.update({
   path: '/checkout/mock-pay',
   getParentRoute: () => rootRouteImport,
 } as any)
+const FeedsGoogleDotxmlRoute = FeedsGoogleDotxmlRouteImport.update({
+  id: '/feeds/google.xml',
+  path: '/feeds/google.xml',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const MediaIdRoute = MediaIdRouteImport.update({
   id: '/media/$id',
   path: '/media/$id',
@@ -331,8 +349,10 @@ export interface FileRoutesByFullPath {
   '/privacy': typeof PrivacyRoute
   '/responsibility': typeof ResponsibilityRoute
   '/returns': typeof ReturnsRoute
+  '/robots.txt': typeof RobotsDottxtRoute
   '/shipping': typeof ShippingRoute
   '/shop': typeof ShopRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/size-guide': typeof SizeGuideRoute
   '/story': typeof StoryRoute
   '/terms': typeof TermsRoute
@@ -352,6 +372,7 @@ export interface FileRoutesByFullPath {
   '/admin/subscribers': typeof AdminSubscribersRoute
   '/admin/team': typeof AdminTeamRoute
   '/checkout/mock-pay': typeof CheckoutMockPayRoute
+  '/feeds/google.xml': typeof FeedsGoogleDotxmlRoute
   '/media/$id': typeof MediaIdRoute
   '/newsletter/unsubscribe': typeof NewsletterUnsubscribeRoute
   '/orders/$id': typeof OrdersIdRoute
@@ -383,8 +404,10 @@ export interface FileRoutesByTo {
   '/privacy': typeof PrivacyRoute
   '/responsibility': typeof ResponsibilityRoute
   '/returns': typeof ReturnsRoute
+  '/robots.txt': typeof RobotsDottxtRoute
   '/shipping': typeof ShippingRoute
   '/shop': typeof ShopRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/size-guide': typeof SizeGuideRoute
   '/story': typeof StoryRoute
   '/terms': typeof TermsRoute
@@ -404,6 +427,7 @@ export interface FileRoutesByTo {
   '/admin/subscribers': typeof AdminSubscribersRoute
   '/admin/team': typeof AdminTeamRoute
   '/checkout/mock-pay': typeof CheckoutMockPayRoute
+  '/feeds/google.xml': typeof FeedsGoogleDotxmlRoute
   '/media/$id': typeof MediaIdRoute
   '/newsletter/unsubscribe': typeof NewsletterUnsubscribeRoute
   '/orders/$id': typeof OrdersIdRoute
@@ -437,8 +461,10 @@ export interface FileRoutesById {
   '/privacy': typeof PrivacyRoute
   '/responsibility': typeof ResponsibilityRoute
   '/returns': typeof ReturnsRoute
+  '/robots.txt': typeof RobotsDottxtRoute
   '/shipping': typeof ShippingRoute
   '/shop': typeof ShopRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/size-guide': typeof SizeGuideRoute
   '/story': typeof StoryRoute
   '/terms': typeof TermsRoute
@@ -458,6 +484,7 @@ export interface FileRoutesById {
   '/admin/subscribers': typeof AdminSubscribersRoute
   '/admin/team': typeof AdminTeamRoute
   '/checkout/mock-pay': typeof CheckoutMockPayRoute
+  '/feeds/google.xml': typeof FeedsGoogleDotxmlRoute
   '/media/$id': typeof MediaIdRoute
   '/newsletter/unsubscribe': typeof NewsletterUnsubscribeRoute
   '/orders/$id': typeof OrdersIdRoute
@@ -492,8 +519,10 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/responsibility'
     | '/returns'
+    | '/robots.txt'
     | '/shipping'
     | '/shop'
+    | '/sitemap.xml'
     | '/size-guide'
     | '/story'
     | '/terms'
@@ -513,6 +542,7 @@ export interface FileRouteTypes {
     | '/admin/subscribers'
     | '/admin/team'
     | '/checkout/mock-pay'
+    | '/feeds/google.xml'
     | '/media/$id'
     | '/newsletter/unsubscribe'
     | '/orders/$id'
@@ -544,8 +574,10 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/responsibility'
     | '/returns'
+    | '/robots.txt'
     | '/shipping'
     | '/shop'
+    | '/sitemap.xml'
     | '/size-guide'
     | '/story'
     | '/terms'
@@ -565,6 +597,7 @@ export interface FileRouteTypes {
     | '/admin/subscribers'
     | '/admin/team'
     | '/checkout/mock-pay'
+    | '/feeds/google.xml'
     | '/media/$id'
     | '/newsletter/unsubscribe'
     | '/orders/$id'
@@ -597,8 +630,10 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/responsibility'
     | '/returns'
+    | '/robots.txt'
     | '/shipping'
     | '/shop'
+    | '/sitemap.xml'
     | '/size-guide'
     | '/story'
     | '/terms'
@@ -618,6 +653,7 @@ export interface FileRouteTypes {
     | '/admin/subscribers'
     | '/admin/team'
     | '/checkout/mock-pay'
+    | '/feeds/google.xml'
     | '/media/$id'
     | '/newsletter/unsubscribe'
     | '/orders/$id'
@@ -651,8 +687,10 @@ export interface RootRouteChildren {
   PrivacyRoute: typeof PrivacyRoute
   ResponsibilityRoute: typeof ResponsibilityRoute
   ReturnsRoute: typeof ReturnsRoute
+  RobotsDottxtRoute: typeof RobotsDottxtRoute
   ShippingRoute: typeof ShippingRoute
   ShopRoute: typeof ShopRoute
+  SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   SizeGuideRoute: typeof SizeGuideRoute
   StoryRoute: typeof StoryRoute
   TermsRoute: typeof TermsRoute
@@ -663,6 +701,7 @@ export interface RootRouteChildren {
   AccountRegisterRoute: typeof AccountRegisterRoute
   AccountResetRoute: typeof AccountResetRoute
   CheckoutMockPayRoute: typeof CheckoutMockPayRoute
+  FeedsGoogleDotxmlRoute: typeof FeedsGoogleDotxmlRoute
   MediaIdRoute: typeof MediaIdRoute
   NewsletterUnsubscribeRoute: typeof NewsletterUnsubscribeRoute
   OrdersIdRoute: typeof OrdersIdRoute
@@ -761,6 +800,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ReturnsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/robots.txt': {
+      id: '/robots.txt'
+      path: '/robots.txt'
+      fullPath: '/robots.txt'
+      preLoaderRoute: typeof RobotsDottxtRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/shipping': {
       id: '/shipping'
       path: '/shipping'
@@ -773,6 +819,13 @@ declare module '@tanstack/react-router' {
       path: '/shop'
       fullPath: '/shop'
       preLoaderRoute: typeof ShopRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/sitemap.xml': {
+      id: '/sitemap.xml'
+      path: '/sitemap.xml'
+      fullPath: '/sitemap.xml'
+      preLoaderRoute: typeof SitemapDotxmlRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/size-guide': {
@@ -927,6 +980,13 @@ declare module '@tanstack/react-router' {
       path: '/checkout/mock-pay'
       fullPath: '/checkout/mock-pay'
       preLoaderRoute: typeof CheckoutMockPayRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/feeds/google.xml': {
+      id: '/feeds/google.xml'
+      path: '/feeds/google.xml'
+      fullPath: '/feeds/google.xml'
+      preLoaderRoute: typeof FeedsGoogleDotxmlRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/media/$id': {
@@ -1092,8 +1152,10 @@ const rootRouteChildren: RootRouteChildren = {
   PrivacyRoute: PrivacyRoute,
   ResponsibilityRoute: ResponsibilityRoute,
   ReturnsRoute: ReturnsRoute,
+  RobotsDottxtRoute: RobotsDottxtRoute,
   ShippingRoute: ShippingRoute,
   ShopRoute: ShopRoute,
+  SitemapDotxmlRoute: SitemapDotxmlRoute,
   SizeGuideRoute: SizeGuideRoute,
   StoryRoute: StoryRoute,
   TermsRoute: TermsRoute,
@@ -1104,6 +1166,7 @@ const rootRouteChildren: RootRouteChildren = {
   AccountRegisterRoute: AccountRegisterRoute,
   AccountResetRoute: AccountResetRoute,
   CheckoutMockPayRoute: CheckoutMockPayRoute,
+  FeedsGoogleDotxmlRoute: FeedsGoogleDotxmlRoute,
   MediaIdRoute: MediaIdRoute,
   NewsletterUnsubscribeRoute: NewsletterUnsubscribeRoute,
   OrdersIdRoute: OrdersIdRoute,

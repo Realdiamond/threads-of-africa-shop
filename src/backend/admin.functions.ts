@@ -43,6 +43,7 @@ import { guarded } from "./guarded.server";
 import { log } from "./log.server";
 import { refundOrder } from "./order-payments.server";
 import { countNewMessages, deleteMessage, listMessages, setMessageStatus } from "./messages.server";
+import { requeueFailedEmails } from "./email/processor.server";
 import { listSubscribers, removeSubscriber } from "./newsletter.server";
 import { listSitePages, resetSitePage, reviewSitePage, saveSitePage } from "./pages.server";
 import { tooManyRequests, withinRateLimit } from "./rate-limit.server";
@@ -529,5 +530,24 @@ export const adminResendConfirmationFn = createServerFn({ method: "POST" })
         };
       }
       return resendConfirmation(context.admin, data.id);
+    }),
+  );
+
+// ---- Launch checklist ------------------------------------------------------------------------
+
+export const adminRetryFailedEmailsFn = createServerFn({ method: "POST" })
+  .middleware([ownerOnly])
+  .handler(({ context }) =>
+    guarded("adminRetryFailedEmails", async () => {
+      const count = await requeueFailedEmails();
+      await recordAudit(
+        getDb(),
+        context.admin,
+        "emails_requeued",
+        "email",
+        "",
+        `Put ${count} failed email${count === 1 ? "" : "s"} back in the queue`,
+      );
+      return { ok: true as const, count };
     }),
   );

@@ -1,8 +1,11 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
+import { Check, Circle, TriangleAlert } from "lucide-react";
+import { useState } from "react";
 
-import { adminDashboardFn } from "@/backend/admin.functions";
+import { adminDashboardFn, adminRetryFailedEmailsFn } from "@/backend/admin.functions";
 import { formatDateTime, Notice, OrderStatusBadge, PageHeader } from "@/components/admin/admin-ui";
 import { Button } from "@/components/ui/button";
+import type { LaunchChecklist } from "@/lib/admin-types";
 import { formatCents, formatOrderNumber } from "@/lib/order-types";
 
 export const Route = createFileRoute("/admin/")({
@@ -36,6 +39,98 @@ function Stat({
   );
 }
 
+function LaunchCard({ launch, isOwner }: { launch: LaunchChecklist; isOwner: boolean }) {
+  const router = useRouter();
+  const [note, setNote] = useState("");
+  const ready =
+    launch.done === launch.required && launch.items.every((i) => i.status !== "warning");
+
+  async function retry() {
+    setNote("");
+    try {
+      const result = await adminRetryFailedEmailsFn();
+      setNote(`Put ${result.count} email${result.count === 1 ? "" : "s"} back in the queue.`);
+      await router.invalidate();
+    } catch {
+      setNote("That did not work. Please try again.");
+    }
+  }
+
+  return (
+    <section className="mb-6 rounded-lg border bg-background p-5" aria-labelledby="launch-title">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h2 id="launch-title" className="font-display text-lg">
+          {ready ? "Ready to launch" : "Getting ready to launch"}
+        </h2>
+        <p className="text-sm text-muted-foreground">
+          {launch.done} of {launch.required} done
+        </p>
+      </div>
+      <div
+        className="mt-2 h-1.5 overflow-hidden rounded-full bg-secondary"
+        role="progressbar"
+        aria-valuemin={0}
+        aria-valuemax={launch.required}
+        aria-valuenow={launch.done}
+        aria-label="Launch progress"
+      >
+        <div
+          className="h-full bg-primary"
+          style={{ width: `${(launch.done / Math.max(1, launch.required)) * 100}%` }}
+        />
+      </div>
+      <ul className="mt-4 divide-y text-sm">
+        {launch.items.map((item) => (
+          <li key={item.id} className="flex gap-3 py-2.5">
+            <span className="mt-0.5 shrink-0" aria-hidden="true">
+              {item.status === "done" ? (
+                <Check className="size-4 text-primary" />
+              ) : item.status === "warning" ? (
+                <TriangleAlert className="size-4 text-amber-600" />
+              ) : (
+                <Circle className="size-4 text-muted-foreground" />
+              )}
+            </span>
+            <div className="flex-1">
+              <p className="font-medium">
+                {item.label}
+                {item.optional && (
+                  <span className="ml-2 text-xs font-normal text-muted-foreground">optional</span>
+                )}
+                <span className="sr-only">
+                  {item.status === "done"
+                    ? " — done"
+                    : item.status === "warning"
+                      ? " — needs attention"
+                      : " — to do"}
+                </span>
+              </p>
+              <p className="text-muted-foreground">
+                {item.detail}{" "}
+                {item.href && item.status !== "done" && (
+                  <Link to={item.href} className="underline underline-offset-4">
+                    Open
+                  </Link>
+                )}
+                {item.id === "email-failed" && isOwner && (
+                  <button type="button" onClick={retry} className="underline underline-offset-4">
+                    Retry them
+                  </button>
+                )}
+              </p>
+            </div>
+          </li>
+        ))}
+      </ul>
+      {note && (
+        <p role="status" className="mt-3 text-sm text-muted-foreground">
+          {note}
+        </p>
+      )}
+    </section>
+  );
+}
+
 function Dashboard() {
   const data = Route.useLoaderData();
   const { admin } = Route.useRouteContext();
@@ -51,6 +146,8 @@ function Dashboard() {
           </Button>
         }
       />
+
+      <LaunchCard launch={data.launch} isOwner={admin?.role === "owner"} />
 
       {data.attention.length > 0 && (
         <Notice kind="warning" className="mb-6">

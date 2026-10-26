@@ -70,3 +70,24 @@ export type ProductInput = {
 };
 
 export type AdminCategory = { id: string; slug: string; name: string; productCount: number };
+
+// One line of the "ready to launch?" list on the dashboard.
+export type ChecklistItem = {
+  id: string;
+  label: string;
+  // done: finished. todo: needed before launch. warning: works, but needs your attention.
+  status: "done" | "todo" | "warning";
+  detail: string;
+  // Part of the list for completeness but not needed to open the shop.
+  optional?: boolean;
+  // The admin page where it gets fixed.
+  href?: string;
+};
+
+export type LaunchChecklist = {
+  items: ChecklistItem[];
+  // How many of the required items are done, out of how many.
+  done: number;
+  required: number;
+  emailBacklog: { pending: number; failed: number };
+};
