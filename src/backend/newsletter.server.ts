@@ -5,6 +5,7 @@ import { and, desc, eq, ilike, sql } from "drizzle-orm";
 import type { SubscriberRow } from "@/lib/store-types";
 
 import { recordAudit, type Actor } from "./admin/audit.server";
+import { csvCell } from "./csv.server";
 import { getDb, type Db } from "./db/client.server";
 import { newsletterSubscribers } from "./db/schema";
 import { queueEmail } from "./email/outbox.server";
@@ -133,13 +134,6 @@ export async function removeSubscriber(
   );
   return { ok: true };
 }
-
-// Spreadsheet programs run cells that start with = + - @ as formulas, so a hostile address could
-// do harm when the export is opened. Prefixing a quote makes them plain text.
-const csvCell = (value: string) => {
-  const safe = /^[=+\-@\t\r]/.test(value) ? `'${value}` : value;
-  return /[",\n]/.test(safe) ? `"${safe.replace(/"/g, '""')}"` : safe;
-};
 
 export async function subscribersCsv(db: Db = getDb()): Promise<string> {
   const rows = await db

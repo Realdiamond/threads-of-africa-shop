@@ -33,21 +33,27 @@ import { Route as AdminActivityRouteImport } from './routes/admin.activity'
 import { Route as AdminCategoriesRouteImport } from './routes/admin.categories'
 import { Route as AdminLoginRouteImport } from './routes/admin.login'
 import { Route as AdminMessagesRouteImport } from './routes/admin.messages'
-import { Route as AdminOrdersRouteImport } from './routes/admin.orders'
 import { Route as AdminSettingsRouteImport } from './routes/admin.settings'
 import { Route as AdminShippingRouteImport } from './routes/admin.shipping'
 import { Route as AdminSubscribersRouteImport } from './routes/admin.subscribers'
 import { Route as AdminTeamRouteImport } from './routes/admin.team'
+import { Route as CheckoutIndexRouteImport } from './routes/checkout.index'
+import { Route as CheckoutMockPayRouteImport } from './routes/checkout.mock-pay'
 import { Route as MediaIdRouteImport } from './routes/media.$id'
 import { Route as NewsletterUnsubscribeRouteImport } from './routes/newsletter.unsubscribe'
+import { Route as OrdersIdRouteImport } from './routes/orders.$id'
 import { Route as ProductIdRouteImport } from './routes/product.$id'
+import { Route as AdminOrdersIndexRouteImport } from './routes/admin.orders.index'
+import { Route as AdminOrdersIdRouteImport } from './routes/admin.orders.$id'
 import { Route as AdminPagesIndexRouteImport } from './routes/admin.pages.index'
 import { Route as AdminPagesSlugRouteImport } from './routes/admin.pages.$slug'
 import { Route as AdminProductsIndexRouteImport } from './routes/admin.products.index'
 import { Route as AdminProductsIdRouteImport } from './routes/admin.products.$id'
 import { Route as AdminProductsNewRouteImport } from './routes/admin.products.new'
+import { Route as ApiAdminOrdersDotcsvRouteImport } from './routes/api.admin.orders[.]csv'
 import { Route as ApiAdminSubscribersDotcsvRouteImport } from './routes/api.admin.subscribers[.]csv'
 import { Route as ApiAdminUploadRouteImport } from './routes/api.admin.upload'
+import { Route as ApiStripeWebhookRouteImport } from './routes/api.stripe.webhook'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -169,11 +175,6 @@ const AdminMessagesRoute = AdminMessagesRouteImport.update({
   path: '/messages',
   getParentRoute: () => AdminRoute,
 } as any)
-const AdminOrdersRoute = AdminOrdersRouteImport.update({
-  id: '/orders',
-  path: '/orders',
-  getParentRoute: () => AdminRoute,
-} as any)
 const AdminSettingsRoute = AdminSettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
@@ -194,6 +195,16 @@ const AdminTeamRoute = AdminTeamRouteImport.update({
   path: '/team',
   getParentRoute: () => AdminRoute,
 } as any)
+const CheckoutIndexRoute = CheckoutIndexRouteImport.update({
+  id: '/checkout/',
+  path: '/checkout/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CheckoutMockPayRoute = CheckoutMockPayRouteImport.update({
+  id: '/checkout/mock-pay',
+  path: '/checkout/mock-pay',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const MediaIdRoute = MediaIdRouteImport.update({
   id: '/media/$id',
   path: '/media/$id',
@@ -204,10 +215,25 @@ const NewsletterUnsubscribeRoute = NewsletterUnsubscribeRouteImport.update({
   path: '/newsletter/unsubscribe',
   getParentRoute: () => rootRouteImport,
 } as any)
+const OrdersIdRoute = OrdersIdRouteImport.update({
+  id: '/orders/$id',
+  path: '/orders/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ProductIdRoute = ProductIdRouteImport.update({
   id: '/product/$id',
   path: '/product/$id',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AdminOrdersIndexRoute = AdminOrdersIndexRouteImport.update({
+  id: '/orders/',
+  path: '/orders/',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminOrdersIdRoute = AdminOrdersIdRouteImport.update({
+  id: '/orders/$id',
+  path: '/orders/$id',
+  getParentRoute: () => AdminRoute,
 } as any)
 const AdminPagesIndexRoute = AdminPagesIndexRouteImport.update({
   id: '/pages/',
@@ -234,6 +260,11 @@ const AdminProductsNewRoute = AdminProductsNewRouteImport.update({
   path: '/products/new',
   getParentRoute: () => AdminRoute,
 } as any)
+const ApiAdminOrdersDotcsvRoute = ApiAdminOrdersDotcsvRouteImport.update({
+  id: '/api/admin/orders.csv',
+  path: '/api/admin/orders.csv',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiAdminSubscribersDotcsvRoute =
   ApiAdminSubscribersDotcsvRouteImport.update({
     id: '/api/admin/subscribers.csv',
@@ -243,6 +274,11 @@ const ApiAdminSubscribersDotcsvRoute =
 const ApiAdminUploadRoute = ApiAdminUploadRouteImport.update({
   id: '/api/admin/upload',
   path: '/api/admin/upload',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiStripeWebhookRoute = ApiStripeWebhookRouteImport.update({
+  id: '/api/stripe/webhook',
+  path: '/api/stripe/webhook',
   getParentRoute: () => rootRouteImport,
 } as any)
 
@@ -270,20 +306,26 @@ export interface FileRoutesByFullPath {
   '/admin/categories': typeof AdminCategoriesRoute
   '/admin/login': typeof AdminLoginRoute
   '/admin/messages': typeof AdminMessagesRoute
-  '/admin/orders': typeof AdminOrdersRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/shipping': typeof AdminShippingRoute
   '/admin/subscribers': typeof AdminSubscribersRoute
   '/admin/team': typeof AdminTeamRoute
+  '/checkout/mock-pay': typeof CheckoutMockPayRoute
   '/media/$id': typeof MediaIdRoute
   '/newsletter/unsubscribe': typeof NewsletterUnsubscribeRoute
+  '/orders/$id': typeof OrdersIdRoute
   '/product/$id': typeof ProductIdRoute
   '/admin/': typeof AdminIndexRoute
+  '/checkout/': typeof CheckoutIndexRoute
+  '/admin/orders/$id': typeof AdminOrdersIdRoute
   '/admin/pages/$slug': typeof AdminPagesSlugRoute
   '/admin/products/$id': typeof AdminProductsIdRoute
   '/admin/products/new': typeof AdminProductsNewRoute
+  '/api/admin/orders.csv': typeof ApiAdminOrdersDotcsvRoute
   '/api/admin/subscribers.csv': typeof ApiAdminSubscribersDotcsvRoute
   '/api/admin/upload': typeof ApiAdminUploadRoute
+  '/api/stripe/webhook': typeof ApiStripeWebhookRoute
+  '/admin/orders/': typeof AdminOrdersIndexRoute
   '/admin/pages/': typeof AdminPagesIndexRoute
   '/admin/products/': typeof AdminProductsIndexRoute
 }
@@ -310,20 +352,26 @@ export interface FileRoutesByTo {
   '/admin/categories': typeof AdminCategoriesRoute
   '/admin/login': typeof AdminLoginRoute
   '/admin/messages': typeof AdminMessagesRoute
-  '/admin/orders': typeof AdminOrdersRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/shipping': typeof AdminShippingRoute
   '/admin/subscribers': typeof AdminSubscribersRoute
   '/admin/team': typeof AdminTeamRoute
+  '/checkout/mock-pay': typeof CheckoutMockPayRoute
   '/media/$id': typeof MediaIdRoute
   '/newsletter/unsubscribe': typeof NewsletterUnsubscribeRoute
+  '/orders/$id': typeof OrdersIdRoute
   '/product/$id': typeof ProductIdRoute
   '/admin': typeof AdminIndexRoute
+  '/checkout': typeof CheckoutIndexRoute
+  '/admin/orders/$id': typeof AdminOrdersIdRoute
   '/admin/pages/$slug': typeof AdminPagesSlugRoute
   '/admin/products/$id': typeof AdminProductsIdRoute
   '/admin/products/new': typeof AdminProductsNewRoute
+  '/api/admin/orders.csv': typeof ApiAdminOrdersDotcsvRoute
   '/api/admin/subscribers.csv': typeof ApiAdminSubscribersDotcsvRoute
   '/api/admin/upload': typeof ApiAdminUploadRoute
+  '/api/stripe/webhook': typeof ApiStripeWebhookRoute
+  '/admin/orders': typeof AdminOrdersIndexRoute
   '/admin/pages': typeof AdminPagesIndexRoute
   '/admin/products': typeof AdminProductsIndexRoute
 }
@@ -352,20 +400,26 @@ export interface FileRoutesById {
   '/admin/categories': typeof AdminCategoriesRoute
   '/admin/login': typeof AdminLoginRoute
   '/admin/messages': typeof AdminMessagesRoute
-  '/admin/orders': typeof AdminOrdersRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/shipping': typeof AdminShippingRoute
   '/admin/subscribers': typeof AdminSubscribersRoute
   '/admin/team': typeof AdminTeamRoute
+  '/checkout/mock-pay': typeof CheckoutMockPayRoute
   '/media/$id': typeof MediaIdRoute
   '/newsletter/unsubscribe': typeof NewsletterUnsubscribeRoute
+  '/orders/$id': typeof OrdersIdRoute
   '/product/$id': typeof ProductIdRoute
   '/admin/': typeof AdminIndexRoute
+  '/checkout/': typeof CheckoutIndexRoute
+  '/admin/orders/$id': typeof AdminOrdersIdRoute
   '/admin/pages/$slug': typeof AdminPagesSlugRoute
   '/admin/products/$id': typeof AdminProductsIdRoute
   '/admin/products/new': typeof AdminProductsNewRoute
+  '/api/admin/orders.csv': typeof ApiAdminOrdersDotcsvRoute
   '/api/admin/subscribers.csv': typeof ApiAdminSubscribersDotcsvRoute
   '/api/admin/upload': typeof ApiAdminUploadRoute
+  '/api/stripe/webhook': typeof ApiStripeWebhookRoute
+  '/admin/orders/': typeof AdminOrdersIndexRoute
   '/admin/pages/': typeof AdminPagesIndexRoute
   '/admin/products/': typeof AdminProductsIndexRoute
 }
@@ -395,20 +449,26 @@ export interface FileRouteTypes {
     | '/admin/categories'
     | '/admin/login'
     | '/admin/messages'
-    | '/admin/orders'
     | '/admin/settings'
     | '/admin/shipping'
     | '/admin/subscribers'
     | '/admin/team'
+    | '/checkout/mock-pay'
     | '/media/$id'
     | '/newsletter/unsubscribe'
+    | '/orders/$id'
     | '/product/$id'
     | '/admin/'
+    | '/checkout/'
+    | '/admin/orders/$id'
     | '/admin/pages/$slug'
     | '/admin/products/$id'
     | '/admin/products/new'
+    | '/api/admin/orders.csv'
     | '/api/admin/subscribers.csv'
     | '/api/admin/upload'
+    | '/api/stripe/webhook'
+    | '/admin/orders/'
     | '/admin/pages/'
     | '/admin/products/'
   fileRoutesByTo: FileRoutesByTo
@@ -435,20 +495,26 @@ export interface FileRouteTypes {
     | '/admin/categories'
     | '/admin/login'
     | '/admin/messages'
-    | '/admin/orders'
     | '/admin/settings'
     | '/admin/shipping'
     | '/admin/subscribers'
     | '/admin/team'
+    | '/checkout/mock-pay'
     | '/media/$id'
     | '/newsletter/unsubscribe'
+    | '/orders/$id'
     | '/product/$id'
     | '/admin'
+    | '/checkout'
+    | '/admin/orders/$id'
     | '/admin/pages/$slug'
     | '/admin/products/$id'
     | '/admin/products/new'
+    | '/api/admin/orders.csv'
     | '/api/admin/subscribers.csv'
     | '/api/admin/upload'
+    | '/api/stripe/webhook'
+    | '/admin/orders'
     | '/admin/pages'
     | '/admin/products'
   id:
@@ -476,20 +542,26 @@ export interface FileRouteTypes {
     | '/admin/categories'
     | '/admin/login'
     | '/admin/messages'
-    | '/admin/orders'
     | '/admin/settings'
     | '/admin/shipping'
     | '/admin/subscribers'
     | '/admin/team'
+    | '/checkout/mock-pay'
     | '/media/$id'
     | '/newsletter/unsubscribe'
+    | '/orders/$id'
     | '/product/$id'
     | '/admin/'
+    | '/checkout/'
+    | '/admin/orders/$id'
     | '/admin/pages/$slug'
     | '/admin/products/$id'
     | '/admin/products/new'
+    | '/api/admin/orders.csv'
     | '/api/admin/subscribers.csv'
     | '/api/admin/upload'
+    | '/api/stripe/webhook'
+    | '/admin/orders/'
     | '/admin/pages/'
     | '/admin/products/'
   fileRoutesById: FileRoutesById
@@ -513,11 +585,16 @@ export interface RootRouteChildren {
   StoryRoute: typeof StoryRoute
   TermsRoute: typeof TermsRoute
   WholesaleRoute: typeof WholesaleRoute
+  CheckoutMockPayRoute: typeof CheckoutMockPayRoute
   MediaIdRoute: typeof MediaIdRoute
   NewsletterUnsubscribeRoute: typeof NewsletterUnsubscribeRoute
+  OrdersIdRoute: typeof OrdersIdRoute
   ProductIdRoute: typeof ProductIdRoute
+  CheckoutIndexRoute: typeof CheckoutIndexRoute
+  ApiAdminOrdersDotcsvRoute: typeof ApiAdminOrdersDotcsvRoute
   ApiAdminSubscribersDotcsvRoute: typeof ApiAdminSubscribersDotcsvRoute
   ApiAdminUploadRoute: typeof ApiAdminUploadRoute
+  ApiStripeWebhookRoute: typeof ApiStripeWebhookRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -690,13 +767,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminMessagesRouteImport
       parentRoute: typeof AdminRoute
     }
-    '/admin/orders': {
-      id: '/admin/orders'
-      path: '/orders'
-      fullPath: '/admin/orders'
-      preLoaderRoute: typeof AdminOrdersRouteImport
-      parentRoute: typeof AdminRoute
-    }
     '/admin/settings': {
       id: '/admin/settings'
       path: '/settings'
@@ -725,6 +795,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminTeamRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/checkout/': {
+      id: '/checkout/'
+      path: '/checkout'
+      fullPath: '/checkout/'
+      preLoaderRoute: typeof CheckoutIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/checkout/mock-pay': {
+      id: '/checkout/mock-pay'
+      path: '/checkout/mock-pay'
+      fullPath: '/checkout/mock-pay'
+      preLoaderRoute: typeof CheckoutMockPayRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/media/$id': {
       id: '/media/$id'
       path: '/media/$id'
@@ -739,12 +823,33 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof NewsletterUnsubscribeRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/orders/$id': {
+      id: '/orders/$id'
+      path: '/orders/$id'
+      fullPath: '/orders/$id'
+      preLoaderRoute: typeof OrdersIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/product/$id': {
       id: '/product/$id'
       path: '/product/$id'
       fullPath: '/product/$id'
       preLoaderRoute: typeof ProductIdRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/admin/orders/': {
+      id: '/admin/orders/'
+      path: '/orders'
+      fullPath: '/admin/orders/'
+      preLoaderRoute: typeof AdminOrdersIndexRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/orders/$id': {
+      id: '/admin/orders/$id'
+      path: '/orders/$id'
+      fullPath: '/admin/orders/$id'
+      preLoaderRoute: typeof AdminOrdersIdRouteImport
+      parentRoute: typeof AdminRoute
     }
     '/admin/pages/': {
       id: '/admin/pages/'
@@ -781,6 +886,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminProductsNewRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/api/admin/orders.csv': {
+      id: '/api/admin/orders.csv'
+      path: '/api/admin/orders.csv'
+      fullPath: '/api/admin/orders.csv'
+      preLoaderRoute: typeof ApiAdminOrdersDotcsvRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/admin/subscribers.csv': {
       id: '/api/admin/subscribers.csv'
       path: '/api/admin/subscribers.csv'
@@ -795,6 +907,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAdminUploadRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/stripe/webhook': {
+      id: '/api/stripe/webhook'
+      path: '/api/stripe/webhook'
+      fullPath: '/api/stripe/webhook'
+      preLoaderRoute: typeof ApiStripeWebhookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -804,15 +923,16 @@ interface AdminRouteChildren {
   AdminCategoriesRoute: typeof AdminCategoriesRoute
   AdminLoginRoute: typeof AdminLoginRoute
   AdminMessagesRoute: typeof AdminMessagesRoute
-  AdminOrdersRoute: typeof AdminOrdersRoute
   AdminSettingsRoute: typeof AdminSettingsRoute
   AdminShippingRoute: typeof AdminShippingRoute
   AdminSubscribersRoute: typeof AdminSubscribersRoute
   AdminTeamRoute: typeof AdminTeamRoute
   AdminIndexRoute: typeof AdminIndexRoute
+  AdminOrdersIdRoute: typeof AdminOrdersIdRoute
   AdminPagesSlugRoute: typeof AdminPagesSlugRoute
   AdminProductsIdRoute: typeof AdminProductsIdRoute
   AdminProductsNewRoute: typeof AdminProductsNewRoute
+  AdminOrdersIndexRoute: typeof AdminOrdersIndexRoute
   AdminPagesIndexRoute: typeof AdminPagesIndexRoute
   AdminProductsIndexRoute: typeof AdminProductsIndexRoute
 }
@@ -823,15 +943,16 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminCategoriesRoute: AdminCategoriesRoute,
   AdminLoginRoute: AdminLoginRoute,
   AdminMessagesRoute: AdminMessagesRoute,
-  AdminOrdersRoute: AdminOrdersRoute,
   AdminSettingsRoute: AdminSettingsRoute,
   AdminShippingRoute: AdminShippingRoute,
   AdminSubscribersRoute: AdminSubscribersRoute,
   AdminTeamRoute: AdminTeamRoute,
   AdminIndexRoute: AdminIndexRoute,
+  AdminOrdersIdRoute: AdminOrdersIdRoute,
   AdminPagesSlugRoute: AdminPagesSlugRoute,
   AdminProductsIdRoute: AdminProductsIdRoute,
   AdminProductsNewRoute: AdminProductsNewRoute,
+  AdminOrdersIndexRoute: AdminOrdersIndexRoute,
   AdminPagesIndexRoute: AdminPagesIndexRoute,
   AdminProductsIndexRoute: AdminProductsIndexRoute,
 }
@@ -857,11 +978,16 @@ const rootRouteChildren: RootRouteChildren = {
   StoryRoute: StoryRoute,
   TermsRoute: TermsRoute,
   WholesaleRoute: WholesaleRoute,
+  CheckoutMockPayRoute: CheckoutMockPayRoute,
   MediaIdRoute: MediaIdRoute,
   NewsletterUnsubscribeRoute: NewsletterUnsubscribeRoute,
+  OrdersIdRoute: OrdersIdRoute,
   ProductIdRoute: ProductIdRoute,
+  CheckoutIndexRoute: CheckoutIndexRoute,
+  ApiAdminOrdersDotcsvRoute: ApiAdminOrdersDotcsvRoute,
   ApiAdminSubscribersDotcsvRoute: ApiAdminSubscribersDotcsvRoute,
   ApiAdminUploadRoute: ApiAdminUploadRoute,
+  ApiStripeWebhookRoute: ApiStripeWebhookRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

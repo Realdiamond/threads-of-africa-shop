@@ -3,10 +3,12 @@ import { purgeExpiredSessions } from "./auth/admin-auth.server";
 import { purgeExpiredCarts } from "./cart.server";
 import { processEmailOutbox, purgeOldEmails } from "./email/processor.server";
 import { errorFields, log } from "./log.server";
+import { expireStaleOrders } from "./orders.server";
 
 // Background work that runs inside the web process: one Railway service is enough, with no
 // separate worker to deploy. Each job is guarded against overlapping with itself.
 const OUTBOX_EVERY_MS = 15_000;
+const ORDER_EXPIRY_EVERY_MS = 60_000;
 const MAINTENANCE_EVERY_MS = 60 * 60 * 1000;
 
 const running = new Set<string>();
@@ -51,6 +53,10 @@ export function startBackgroundJobs() {
     () => void once("email-outbox", async () => void (await processEmailOutbox())),
     OUTBOX_EVERY_MS,
   );
+  const orderExpiry = setInterval(
+    () => void once("order-expiry", async () => void (await expireStaleOrders())),
+    ORDER_EXPIRY_EVERY_MS,
+  );
   const maintenance = setInterval(
     () => void once("maintenance", runMaintenance),
     MAINTENANCE_EVERY_MS,
@@ -58,6 +64,7 @@ export function startBackgroundJobs() {
   const first = setTimeout(() => void once("maintenance", runMaintenance), 60_000);
   // Never keep the process alive just for these.
   outbox.unref();
+  orderExpiry.unref();
   maintenance.unref();
   first.unref();
   log("info", "background jobs started");

@@ -18,7 +18,6 @@ import {
   updateCartLine,
 } from "@/backend/cart.server";
 import { fetchActiveProducts } from "@/backend/catalog.server";
-import { startCheckout, validateCartForCheckout } from "@/backend/checkout.server";
 import * as schema from "@/backend/db/schema";
 import {
   cartLines,
@@ -397,47 +396,6 @@ describe.skipIf(!url)("backend (Postgres)", () => {
       expect(await purgeExpiredCarts(db)).toBe(1);
       expect((await getCart(keep.cart.cartId, db)).ok).toBe(true);
       expect((await getCart(drop.cart.cartId, db)).ok).toBe(false);
-    });
-  });
-
-  describe("checkout", () => {
-    it("re-checks the bag against live stock", async () => {
-      const created = await createCart(sizeM, 2, db);
-      if (!created.ok) throw new Error(created.message);
-      const { cartId } = created.cart;
-      expect(await validateCartForCheckout(cartId, db)).toMatchObject({ ok: true });
-
-      await db
-        .update(variants)
-        .set({ stock: 1 })
-        .where(sql`${variants.id} = ${sizeM}`);
-      expect(await validateCartForCheckout(cartId, db)).toMatchObject({
-        ok: false,
-        code: "ITEMS_UNAVAILABLE",
-      });
-
-      const line = created.cart.lines[0]!.lineId;
-      await removeCartLine(cartId, line, db);
-      expect(await validateCartForCheckout(cartId, db)).toMatchObject({
-        ok: false,
-        code: "CART_EMPTY",
-      });
-      expect(
-        await validateCartForCheckout("00000000-0000-4000-8000-000000000000", db),
-      ).toMatchObject({
-        ok: false,
-        code: "CART_NOT_FOUND",
-      });
-    });
-
-    it("stays closed until payments are configured", async () => {
-      const created = await createCart(sizeXL, 1, db);
-      if (!created.ok) throw new Error(created.message);
-
-      expect(await startCheckout(created.cart.cartId, db)).toMatchObject({
-        ok: false,
-        code: "PAYMENTS_NOT_CONFIGURED",
-      });
     });
   });
 });

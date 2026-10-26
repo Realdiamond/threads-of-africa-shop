@@ -2,6 +2,15 @@ import { createMiddleware, createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
 import { adminDashboard } from "./admin/dashboard.server";
+import {
+  cancelUnpaid,
+  getAdminOrder,
+  listAdminOrders,
+  markOrderDelivered,
+  resendConfirmation,
+  setOrderNote,
+  shipOrder,
+} from "./admin/order-admin.server";
 import { recordAudit, recentAudit } from "./admin/audit.server";
 import {
   deleteAdminCategory,
@@ -32,6 +41,7 @@ import {
 import { getDb } from "./db/client.server";
 import { guarded } from "./guarded.server";
 import { log } from "./log.server";
+import { refundOrder } from "./order-payments.server";
 import { countNewMessages, deleteMessage, listMessages, setMessageStatus } from "./messages.server";
 import { listSubscribers, removeSubscriber } from "./newsletter.server";
 import { listSitePages, resetSitePage, reviewSitePage, saveSitePage } from "./pages.server";
@@ -425,4 +435,99 @@ export const adminRemoveSubscriberFn = createServerFn({ method: "POST" })
   .validator(z.object({ id }))
   .handler(({ data, context }) =>
     guarded("adminRemoveSubscriber", () => removeSubscriber(context.admin, data.id)),
+  );
+
+// ---- Orders ----------------------------------------------------------------------------------
+
+const orderStatus = z.enum([
+  "pending_payment",
+  "paid",
+  "shipped",
+  "delivered",
+  "cancelled",
+  "refunded",
+]);
+
+export const adminListOrdersFn = createServerFn({ method: "POST" })
+  .middleware([activeAdmin])
+  .validator(
+    z.object({
+      status: orderStatus.optional(),
+      search: z.string().max(100).optional(),
+      page: z.number().int().min(1).max(10_000).optional(),
+    }),
+  )
+  .handler(({ data }) => guarded("adminListOrders", () => listAdminOrders(data)));
+
+export const adminGetOrderFn = createServerFn({ method: "POST" })
+  .middleware([activeAdmin])
+  .validator(z.object({ id }))
+  .handler(({ data }) => guarded("adminGetOrder", () => getAdminOrder(data.id)));
+
+export const adminShipOrderFn = createServerFn({ method: "POST" })
+  .middleware([activeAdmin])
+  .validator(
+    z.object({
+      id,
+      carrier: z.string().max(60),
+      trackingNumber: z.string().max(100),
+      notify: z.boolean(),
+    }),
+  )
+  .handler(({ data, context }) =>
+    guarded("adminShipOrder", () =>
+      shipOrder(context.admin, data.id, {
+        carrier: data.carrier,
+        trackingNumber: data.trackingNumber,
+        notify: data.notify,
+      }),
+    ),
+  );
+
+export const adminDeliverOrderFn = createServerFn({ method: "POST" })
+  .middleware([activeAdmin])
+  .validator(z.object({ id }))
+  .handler(({ data, context }) =>
+    guarded("adminDeliverOrder", () => markOrderDelivered(context.admin, data.id)),
+  );
+
+export const adminCancelOrderFn = createServerFn({ method: "POST" })
+  .middleware([activeAdmin])
+  .validator(z.object({ id }))
+  .handler(({ data, context }) =>
+    guarded("adminCancelOrder", () => cancelUnpaid(context.admin, data.id)),
+  );
+
+// Refunds move real money, so only an owner can do them.
+export const adminRefundOrderFn = createServerFn({ method: "POST" })
+  .middleware([ownerOnly])
+  .validator(z.object({ id, restock: z.boolean() }))
+  .handler(({ data, context }) =>
+    guarded("adminRefundOrder", () =>
+      refundOrder(context.admin, data.id, { restock: data.restock }),
+    ),
+  );
+
+export const adminSetOrderNoteFn = createServerFn({ method: "POST" })
+  .middleware([activeAdmin])
+  .validator(z.object({ id, notes: z.string().max(2000) }))
+  .handler(({ data, context }) =>
+    guarded("adminSetOrderNote", () => setOrderNote(context.admin, data.id, data.notes)),
+  );
+
+export const adminResendConfirmationFn = createServerFn({ method: "POST" })
+  .middleware([activeAdmin])
+  .validator(z.object({ id }))
+  .handler(({ data, context }) =>
+    guarded("adminResendConfirmation", async () => {
+      // A receipt email is cheap to ask for and easy to abuse by clicking, so it is throttled.
+      if (tooManyRequests("admin-resend-receipt", 30, FIFTEEN_MINUTES)) {
+        return {
+          ok: false as const,
+          code: "INVALID" as const,
+          message: "Too many emails sent. Wait a few minutes.",
+        };
+      }
+      return resendConfirmation(context.admin, data.id);
+    }),
   );

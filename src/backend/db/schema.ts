@@ -480,3 +480,179 @@ export const emailOutbox = pgTable(
     index("email_outbox_due_idx").on(t.status, t.nextAttemptAt),
   ],
 );
+
+export const orderStatus = pgEnum("order_status", [
+  "pending_payment",
+  "paid",
+  "shipped",
+  "delivered",
+  "cancelled",
+  "refunded",
+]);
+
+// An order is a permanent record: prices, names and the address are copied onto it, so later
+// catalog edits never change what a customer bought.
+export const orders = pgTable(
+  "orders",
+  {
+    id: id(),
+    // Human-friendly order number shown to customers (TOA-1001, TOA-1002, ...).
+    number: integer("number").notNull().unique().generatedAlwaysAsIdentity({ startWith: 1001 }),
+    status: orderStatus("status").notNull().default("pending_payment"),
+    email: text("email").notNull(),
+    cartId: uuid("cart_id").references(() => carts.id, { onDelete: "set null" }),
+    // Sent by the browser once per checkout attempt, so a double-click cannot place two orders.
+    idempotencyKey: text("idempotency_key").unique(),
+    // Fingerprint of what was asked for, so reusing a key for a different request is refused.
+    idempotencyHash: text("idempotency_hash"),
+    // Lets a guest open their order from the emailed link. It is stored as given because the
+    // emails (queued later, from the payment webhook) need to contain it.
+    accessToken: text("access_token").notNull().unique(),
+
+    shipName: text("ship_name").notNull(),
+    shipLine1: text("ship_line1").notNull(),
+    shipLine2: text("ship_line2").notNull().default(""),
+    shipCity: text("ship_city").notNull(),
+    shipRegion: text("ship_region").notNull().default(""),
+    shipPostalCode: text("ship_postal_code").notNull().default(""),
+    shipCountry: text("ship_country").notNull(),
+    shipPhone: text("ship_phone").notNull().default(""),
+
+    currency: text("currency").notNull().default("USD"),
+    itemsCents: integer("items_cents").notNull(),
+    shippingCents: integer("shipping_cents").notNull(),
+    taxCents: integer("tax_cents").notNull(),
+    totalCents: integer("total_cents").notNull(),
+    shippingMethod: text("shipping_method").notNull(),
+    shippingZone: text("shipping_zone").notNull(),
+    taxBps: integer("tax_bps").notNull().default(0),
+
+    paymentProvider: text("payment_provider").notNull(),
+    providerSessionId: text("provider_session_id").unique(),
+    providerPaymentId: text("provider_payment_id"),
+    // Where the customer pays; kept so a retried request can hand the same link back.
+    paymentUrl: text("payment_url"),
+
+    trackingCarrier: text("tracking_carrier").notNull().default(""),
+    trackingNumber: text("tracking_number").notNull().default(""),
+    // Private notes for the shop team; never shown to the customer.
+    notes: text("notes").notNull().default(""),
+
+    // While unpaid, the stock is held until this moment; then the order is cancelled and released.
+    expiresAt: timestamp("expires_at", { withTimezone: true }),
+    paidAt: timestamp("paid_at", { withTimezone: true }),
+    shippedAt: timestamp("shipped_at", { withTimezone: true }),
+    deliveredAt: timestamp("delivered_at", { withTimezone: true }),
+    cancelledAt: timestamp("cancelled_at", { withTimezone: true }),
+    refundedAt: timestamp("refunded_at", { withTimezone: true }),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [
+    check("orders_email_has_at", sql`position('@' in ${t.email}) > 1`),
+    check("orders_email_normalised", sql`${t.email} = lower(btrim(${t.email}))`),
+    check("orders_country_format", sql`${t.shipCountry} ~ '^[A-Z]{2}$'`),
+    check(
+      "orders_amounts_non_negative",
+      sql`${t.itemsCents} >= 0 and ${t.shippingCents} >= 0 and ${t.taxCents} >= 0`,
+    ),
+    check(
+      "orders_total_adds_up",
+      sql`${t.totalCents} = ${t.itemsCents} + ${t.shippingCents} + ${t.taxCents}`,
+    ),
+    check("orders_tax_range", sql`${t.taxBps} between 0 and 5000`),
+    check(
+      "orders_paid_has_paid_at",
+      sql`${t.status} in ('pending_payment', 'cancelled') or ${t.paidAt} is not null`,
+    ),
+    check(
+      "orders_shipped_has_shipped_at",
+      sql`${t.status} not in ('shipped', 'delivered') or ${t.shippedAt} is not null`,
+    ),
+    check(
+      "orders_delivered_has_delivered_at",
+      sql`${t.status} <> 'delivered' or ${t.deliveredAt} is not null`,
+    ),
+    check(
+      "orders_cancelled_has_cancelled_at",
+      sql`${t.status} <> 'cancelled' or ${t.cancelledAt} is not null`,
+    ),
+    check(
+      "orders_refunded_has_refunded_at",
+      sql`${t.status} <> 'refunded' or ${t.refundedAt} is not null`,
+    ),
+    // A bag can have at most one unpaid order at a time.
+    uniqueIndex("orders_one_pending_per_cart")
+      .on(t.cartId)
+      .where(sql`${t.status} = 'pending_payment'`),
+    index("orders_status_created_idx").on(t.status, t.createdAt),
+    index("orders_email_idx").on(t.email),
+    index("orders_pending_expiry_idx")
+      .on(t.expiresAt)
+      .where(sql`${t.status} = 'pending_payment'`),
+  ],
+);
+
+export const orderLines = pgTable(
+  "order_lines",
+  {
+    id: id(),
+    orderId: uuid("order_id")
+      .notNull()
+      .references(() => orders.id, { onDelete: "cascade" }),
+    // The variant can be deleted from the catalog later; the line keeps its own copy of the details.
+    variantId: uuid("variant_id").references(() => variants.id, { onDelete: "set null" }),
+    productTitle: text("product_title").notNull(),
+    variantTitle: text("variant_title").notNull(),
+    sku: text("sku").notNull(),
+    imageUrl: text("image_url").notNull().default(""),
+    unitPriceCents: integer("unit_price_cents").notNull(),
+    quantity: integer("quantity").notNull(),
+    lineTotalCents: integer("line_total_cents").notNull(),
+    // How many units of this line are currently taken out of the variant's stock. Cancelling or
+    // refunding puts exactly this many back, once.
+    stockHeld: integer("stock_held").notNull().default(0),
+  },
+  (t) => [
+    check("order_lines_stock_held_range", sql`${t.stockHeld} between 0 and ${t.quantity}`),
+    check("order_lines_quantity_range", sql`${t.quantity} between 1 and 99`),
+    check("order_lines_price_non_negative", sql`${t.unitPriceCents} >= 0`),
+    check(
+      "order_lines_total_adds_up",
+      sql`${t.lineTotalCents} = ${t.unitPriceCents} * ${t.quantity}`,
+    ),
+    index("order_lines_order_idx").on(t.orderId),
+    index("order_lines_variant_idx").on(t.variantId),
+  ],
+);
+
+// The history of an order: what happened, when, and who or what did it.
+export const orderEvents = pgTable(
+  "order_events",
+  {
+    id: id(),
+    orderId: uuid("order_id")
+      .notNull()
+      .references(() => orders.id, { onDelete: "cascade" }),
+    kind: text("kind").notNull(),
+    summary: text("summary").notNull(),
+    actor: text("actor").notNull(),
+    createdAt: createdAt(),
+  },
+  (t) => [index("order_events_order_idx").on(t.orderId, t.createdAt)],
+);
+
+// One row per payment-provider event ever received. The unique key is what makes a replayed
+// webhook harmless.
+export const webhookEvents = pgTable(
+  "webhook_events",
+  {
+    id: id(),
+    provider: text("provider").notNull(),
+    eventId: text("event_id").notNull(),
+    type: text("type").notNull(),
+    receivedAt: timestamp("received_at", { withTimezone: true }).notNull().defaultNow(),
+    processedAt: timestamp("processed_at", { withTimezone: true }),
+  },
+  (t) => [unique("webhook_events_provider_event_unique").on(t.provider, t.eventId)],
+);

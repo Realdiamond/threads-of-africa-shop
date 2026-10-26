@@ -31,6 +31,8 @@ export function getDb(): Db {
       max: 10,
       connectionTimeoutMillis: 5_000,
       idleTimeoutMillis: 30_000,
+      // Lets the process exit as soon as it is told to stop and nothing is running.
+      allowExitOnIdle: true,
       statement_timeout: 10_000,
     });
     // An idle client erroring (e.g. Postgres restart) must not crash the process.

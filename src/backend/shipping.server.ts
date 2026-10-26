@@ -236,7 +236,7 @@ export type ShippingQuote =
 export async function quoteShipping(
   country: string,
   itemsSubtotalCents: number,
-  db: Db = getDb(),
+  db: Pick<Db, "select"> = getDb(),
 ): Promise<ShippingQuote> {
   const code = country.trim().toUpperCase();
   const [listed] = await db
@@ -281,7 +281,7 @@ export async function quoteShipping(
 }
 
 // The countries a customer can pick at checkout.
-export async function deliverableCountries(db: Db = getDb()): Promise<string[]> {
+export async function deliverableCountries(db: Pick<Db, "select"> = getDb()): Promise<string[]> {
   const [restOfWorld] = await db
     .select({ id: shippingZones.id })
     .from(shippingZones)

@@ -5,7 +5,6 @@ import type { CartResult } from "@/lib/cart-types";
 
 import { addToCart, createCart, getCart, removeCartLine, updateCartLine } from "./cart.server";
 import { fetchActiveProducts } from "./catalog.server";
-import { startCheckout, type CheckoutResult } from "./checkout.server";
 import { guarded } from "./guarded.server";
 import { tooManyRequests } from "./rate-limit.server";
 
@@ -20,7 +19,6 @@ const RATE_LIMIT_MESSAGE = "Too many requests. Please wait a moment and try agai
 const limits = {
   createCart: { scope: "create-cart", limit: 30, windowMs: TEN_MINUTES },
   cart: { scope: "cart", limit: 600, windowMs: TEN_MINUTES },
-  checkout: { scope: "checkout", limit: 30, windowMs: TEN_MINUTES },
 } as const;
 
 const cartRateLimited = (): CartResult => ({
@@ -75,14 +73,4 @@ export const getCartFn = createServerFn({ method: "POST" })
   .validator(z.object({ cartId: id }))
   .handler(({ data }) =>
     guarded("getCart", async () => (hit(limits.cart) ? cartRateLimited() : getCart(data.cartId))),
-  );
-
-export const startCheckoutFn = createServerFn({ method: "POST" })
-  .validator(z.object({ cartId: id }))
-  .handler(({ data }) =>
-    guarded("startCheckout", async (): Promise<CheckoutResult> =>
-      hit(limits.checkout)
-        ? { ok: false, code: "RATE_LIMITED", message: RATE_LIMIT_MESSAGE }
-        : startCheckout(data.cartId),
-    ),
   );

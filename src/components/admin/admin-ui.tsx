@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
+import { ORDER_STATUS_LABELS, type OrderStatus } from "@/lib/order-types";
 import { cn } from "@/lib/utils";
 
 // Runs an admin request; if the session has expired, sends the person back to the sign-in page.
@@ -99,6 +100,23 @@ export function StatusBadge({ status }: { status: string }) {
   return (
     <Badge variant="outline" className={cn("capitalize", STATUS_STYLES[status])}>
       {status}
+    </Badge>
+  );
+}
+
+const ORDER_STATUS_STYLES: Record<OrderStatus, string> = {
+  pending_payment: "border-amber-500/40 bg-amber-50 text-amber-900",
+  paid: "border-primary/30 bg-primary/10 text-primary",
+  shipped: "border-sky-500/40 bg-sky-50 text-sky-900",
+  delivered: "border-border bg-secondary text-foreground",
+  cancelled: "border-border bg-muted text-muted-foreground",
+  refunded: "border-destructive/30 bg-destructive/5 text-destructive",
+};
+
+export function OrderStatusBadge({ status }: { status: OrderStatus }) {
+  return (
+    <Badge variant="outline" className={cn("whitespace-nowrap", ORDER_STATUS_STYLES[status])}>
+      {ORDER_STATUS_LABELS[status]}
     </Badge>
   );
 }
