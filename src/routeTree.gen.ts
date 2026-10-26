@@ -27,6 +27,12 @@ import { Route as SizeGuideRouteImport } from './routes/size-guide'
 import { Route as StoryRouteImport } from './routes/story'
 import { Route as TermsRouteImport } from './routes/terms'
 import { Route as WholesaleRouteImport } from './routes/wholesale'
+import { Route as AccountIndexRouteImport } from './routes/account.index'
+import { Route as AccountActivateRouteImport } from './routes/account.activate'
+import { Route as AccountForgotRouteImport } from './routes/account.forgot'
+import { Route as AccountLoginRouteImport } from './routes/account.login'
+import { Route as AccountRegisterRouteImport } from './routes/account.register'
+import { Route as AccountResetRouteImport } from './routes/account.reset'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as AdminAccountRouteImport } from './routes/admin.account'
 import { Route as AdminActivityRouteImport } from './routes/admin.activity'
@@ -143,6 +149,36 @@ const TermsRoute = TermsRouteImport.update({
 const WholesaleRoute = WholesaleRouteImport.update({
   id: '/wholesale',
   path: '/wholesale',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AccountIndexRoute = AccountIndexRouteImport.update({
+  id: '/account/',
+  path: '/account/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AccountActivateRoute = AccountActivateRouteImport.update({
+  id: '/account/activate',
+  path: '/account/activate',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AccountForgotRoute = AccountForgotRouteImport.update({
+  id: '/account/forgot',
+  path: '/account/forgot',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AccountLoginRoute = AccountLoginRouteImport.update({
+  id: '/account/login',
+  path: '/account/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AccountRegisterRoute = AccountRegisterRouteImport.update({
+  id: '/account/register',
+  path: '/account/register',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AccountResetRoute = AccountResetRouteImport.update({
+  id: '/account/reset',
+  path: '/account/reset',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminIndexRoute = AdminIndexRouteImport.update({
@@ -301,6 +337,11 @@ export interface FileRoutesByFullPath {
   '/story': typeof StoryRoute
   '/terms': typeof TermsRoute
   '/wholesale': typeof WholesaleRoute
+  '/account/activate': typeof AccountActivateRoute
+  '/account/forgot': typeof AccountForgotRoute
+  '/account/login': typeof AccountLoginRoute
+  '/account/register': typeof AccountRegisterRoute
+  '/account/reset': typeof AccountResetRoute
   '/admin/account': typeof AdminAccountRoute
   '/admin/activity': typeof AdminActivityRoute
   '/admin/categories': typeof AdminCategoriesRoute
@@ -315,6 +356,7 @@ export interface FileRoutesByFullPath {
   '/newsletter/unsubscribe': typeof NewsletterUnsubscribeRoute
   '/orders/$id': typeof OrdersIdRoute
   '/product/$id': typeof ProductIdRoute
+  '/account/': typeof AccountIndexRoute
   '/admin/': typeof AdminIndexRoute
   '/checkout/': typeof CheckoutIndexRoute
   '/admin/orders/$id': typeof AdminOrdersIdRoute
@@ -347,6 +389,11 @@ export interface FileRoutesByTo {
   '/story': typeof StoryRoute
   '/terms': typeof TermsRoute
   '/wholesale': typeof WholesaleRoute
+  '/account/activate': typeof AccountActivateRoute
+  '/account/forgot': typeof AccountForgotRoute
+  '/account/login': typeof AccountLoginRoute
+  '/account/register': typeof AccountRegisterRoute
+  '/account/reset': typeof AccountResetRoute
   '/admin/account': typeof AdminAccountRoute
   '/admin/activity': typeof AdminActivityRoute
   '/admin/categories': typeof AdminCategoriesRoute
@@ -361,6 +408,7 @@ export interface FileRoutesByTo {
   '/newsletter/unsubscribe': typeof NewsletterUnsubscribeRoute
   '/orders/$id': typeof OrdersIdRoute
   '/product/$id': typeof ProductIdRoute
+  '/account': typeof AccountIndexRoute
   '/admin': typeof AdminIndexRoute
   '/checkout': typeof CheckoutIndexRoute
   '/admin/orders/$id': typeof AdminOrdersIdRoute
@@ -395,6 +443,11 @@ export interface FileRoutesById {
   '/story': typeof StoryRoute
   '/terms': typeof TermsRoute
   '/wholesale': typeof WholesaleRoute
+  '/account/activate': typeof AccountActivateRoute
+  '/account/forgot': typeof AccountForgotRoute
+  '/account/login': typeof AccountLoginRoute
+  '/account/register': typeof AccountRegisterRoute
+  '/account/reset': typeof AccountResetRoute
   '/admin/account': typeof AdminAccountRoute
   '/admin/activity': typeof AdminActivityRoute
   '/admin/categories': typeof AdminCategoriesRoute
@@ -409,6 +462,7 @@ export interface FileRoutesById {
   '/newsletter/unsubscribe': typeof NewsletterUnsubscribeRoute
   '/orders/$id': typeof OrdersIdRoute
   '/product/$id': typeof ProductIdRoute
+  '/account/': typeof AccountIndexRoute
   '/admin/': typeof AdminIndexRoute
   '/checkout/': typeof CheckoutIndexRoute
   '/admin/orders/$id': typeof AdminOrdersIdRoute
@@ -444,6 +498,11 @@ export interface FileRouteTypes {
     | '/story'
     | '/terms'
     | '/wholesale'
+    | '/account/activate'
+    | '/account/forgot'
+    | '/account/login'
+    | '/account/register'
+    | '/account/reset'
     | '/admin/account'
     | '/admin/activity'
     | '/admin/categories'
@@ -458,6 +517,7 @@ export interface FileRouteTypes {
     | '/newsletter/unsubscribe'
     | '/orders/$id'
     | '/product/$id'
+    | '/account/'
     | '/admin/'
     | '/checkout/'
     | '/admin/orders/$id'
@@ -490,6 +550,11 @@ export interface FileRouteTypes {
     | '/story'
     | '/terms'
     | '/wholesale'
+    | '/account/activate'
+    | '/account/forgot'
+    | '/account/login'
+    | '/account/register'
+    | '/account/reset'
     | '/admin/account'
     | '/admin/activity'
     | '/admin/categories'
@@ -504,6 +569,7 @@ export interface FileRouteTypes {
     | '/newsletter/unsubscribe'
     | '/orders/$id'
     | '/product/$id'
+    | '/account'
     | '/admin'
     | '/checkout'
     | '/admin/orders/$id'
@@ -537,6 +603,11 @@ export interface FileRouteTypes {
     | '/story'
     | '/terms'
     | '/wholesale'
+    | '/account/activate'
+    | '/account/forgot'
+    | '/account/login'
+    | '/account/register'
+    | '/account/reset'
     | '/admin/account'
     | '/admin/activity'
     | '/admin/categories'
@@ -551,6 +622,7 @@ export interface FileRouteTypes {
     | '/newsletter/unsubscribe'
     | '/orders/$id'
     | '/product/$id'
+    | '/account/'
     | '/admin/'
     | '/checkout/'
     | '/admin/orders/$id'
@@ -585,11 +657,17 @@ export interface RootRouteChildren {
   StoryRoute: typeof StoryRoute
   TermsRoute: typeof TermsRoute
   WholesaleRoute: typeof WholesaleRoute
+  AccountActivateRoute: typeof AccountActivateRoute
+  AccountForgotRoute: typeof AccountForgotRoute
+  AccountLoginRoute: typeof AccountLoginRoute
+  AccountRegisterRoute: typeof AccountRegisterRoute
+  AccountResetRoute: typeof AccountResetRoute
   CheckoutMockPayRoute: typeof CheckoutMockPayRoute
   MediaIdRoute: typeof MediaIdRoute
   NewsletterUnsubscribeRoute: typeof NewsletterUnsubscribeRoute
   OrdersIdRoute: typeof OrdersIdRoute
   ProductIdRoute: typeof ProductIdRoute
+  AccountIndexRoute: typeof AccountIndexRoute
   CheckoutIndexRoute: typeof CheckoutIndexRoute
   ApiAdminOrdersDotcsvRoute: typeof ApiAdminOrdersDotcsvRoute
   ApiAdminSubscribersDotcsvRoute: typeof ApiAdminSubscribersDotcsvRoute
@@ -723,6 +801,48 @@ declare module '@tanstack/react-router' {
       path: '/wholesale'
       fullPath: '/wholesale'
       preLoaderRoute: typeof WholesaleRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/account/': {
+      id: '/account/'
+      path: '/account'
+      fullPath: '/account/'
+      preLoaderRoute: typeof AccountIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/account/activate': {
+      id: '/account/activate'
+      path: '/account/activate'
+      fullPath: '/account/activate'
+      preLoaderRoute: typeof AccountActivateRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/account/forgot': {
+      id: '/account/forgot'
+      path: '/account/forgot'
+      fullPath: '/account/forgot'
+      preLoaderRoute: typeof AccountForgotRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/account/login': {
+      id: '/account/login'
+      path: '/account/login'
+      fullPath: '/account/login'
+      preLoaderRoute: typeof AccountLoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/account/register': {
+      id: '/account/register'
+      path: '/account/register'
+      fullPath: '/account/register'
+      preLoaderRoute: typeof AccountRegisterRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/account/reset': {
+      id: '/account/reset'
+      path: '/account/reset'
+      fullPath: '/account/reset'
+      preLoaderRoute: typeof AccountResetRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin/': {
@@ -978,11 +1098,17 @@ const rootRouteChildren: RootRouteChildren = {
   StoryRoute: StoryRoute,
   TermsRoute: TermsRoute,
   WholesaleRoute: WholesaleRoute,
+  AccountActivateRoute: AccountActivateRoute,
+  AccountForgotRoute: AccountForgotRoute,
+  AccountLoginRoute: AccountLoginRoute,
+  AccountRegisterRoute: AccountRegisterRoute,
+  AccountResetRoute: AccountResetRoute,
   CheckoutMockPayRoute: CheckoutMockPayRoute,
   MediaIdRoute: MediaIdRoute,
   NewsletterUnsubscribeRoute: NewsletterUnsubscribeRoute,
   OrdersIdRoute: OrdersIdRoute,
   ProductIdRoute: ProductIdRoute,
+  AccountIndexRoute: AccountIndexRoute,
   CheckoutIndexRoute: CheckoutIndexRoute,
   ApiAdminOrdersDotcsvRoute: ApiAdminOrdersDotcsvRoute,
   ApiAdminSubscribersDotcsvRoute: ApiAdminSubscribersDotcsvRoute,

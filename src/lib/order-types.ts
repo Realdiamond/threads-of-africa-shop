@@ -95,6 +95,8 @@ export type CustomerOrderView = OrderTotals & {
   createdAt: string;
   paidAt: string | null;
   shippedAt: string | null;
+  // True when the order already belongs to a customer account.
+  accountLinked: boolean;
 };
 
 // What the shop team sees: everything.

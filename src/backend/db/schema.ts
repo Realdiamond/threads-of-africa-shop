@@ -490,6 +490,72 @@ export const orderStatus = pgEnum("order_status", [
   "refunded",
 ]);
 
+// Shoppers who made an account. Guests never appear here: an order is complete without one.
+// The password stays empty until the owner of the email address follows the link we send, so
+// nobody can claim someone else's address by registering it first.
+export const customers = pgTable(
+  "customers",
+  {
+    id: id(),
+    email: text("email").notNull().unique(),
+    name: text("name").notNull().default(""),
+    passwordHash: text("password_hash"),
+    emailVerifiedAt: timestamp("email_verified_at", { withTimezone: true }),
+    lastLoginAt: timestamp("last_login_at", { withTimezone: true }),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [
+    check("customers_email_normalised", sql`${t.email} = lower(btrim(${t.email}))`),
+    check("customers_email_has_at", sql`position('@' in ${t.email}) > 1`),
+    // A password can only exist once the email address has been proven.
+    check(
+      "customers_password_needs_verified_email",
+      sql`${t.passwordHash} is null or ${t.emailVerifiedAt} is not null`,
+    ),
+  ],
+);
+
+export const customerSessions = pgTable(
+  "customer_sessions",
+  {
+    id: id(),
+    tokenHash: text("token_hash").notNull().unique(),
+    customerId: uuid("customer_id")
+      .notNull()
+      .references(() => customers.id, { onDelete: "cascade" }),
+    createdAt: createdAt(),
+    lastUsedAt: timestamp("last_used_at", { withTimezone: true }).notNull().defaultNow(),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  },
+  (t) => [
+    index("customer_sessions_customer_idx").on(t.customerId),
+    index("customer_sessions_expires_idx").on(t.expiresAt),
+  ],
+);
+
+// One-time links sent by email: finishing a new account ("activate") or choosing a new password
+// ("reset"). Only a hash of the token is stored, and each token works once.
+export const customerTokens = pgTable(
+  "customer_tokens",
+  {
+    id: id(),
+    customerId: uuid("customer_id")
+      .notNull()
+      .references(() => customers.id, { onDelete: "cascade" }),
+    kind: text("kind").notNull(),
+    tokenHash: text("token_hash").notNull().unique(),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    usedAt: timestamp("used_at", { withTimezone: true }),
+    createdAt: createdAt(),
+  },
+  (t) => [
+    check("customer_tokens_kind", sql`${t.kind} in ('activate', 'reset')`),
+    index("customer_tokens_customer_idx").on(t.customerId, t.kind),
+    index("customer_tokens_expires_idx").on(t.expiresAt),
+  ],
+);
+
 // An order is a permanent record: prices, names and the address are copied onto it, so later
 // catalog edits never change what a customer bought.
 export const orders = pgTable(
@@ -501,6 +567,9 @@ export const orders = pgTable(
     status: orderStatus("status").notNull().default("pending_payment"),
     email: text("email").notNull(),
     cartId: uuid("cart_id").references(() => carts.id, { onDelete: "set null" }),
+    // Set when the customer was signed in, or when the email address was later proven to be theirs.
+    // Deleting an account keeps the order (it is the shop's record) and just clears this.
+    customerId: uuid("customer_id").references(() => customers.id, { onDelete: "set null" }),
     // Sent by the browser once per checkout attempt, so a double-click cannot place two orders.
     idempotencyKey: text("idempotency_key").unique(),
     // Fingerprint of what was asked for, so reusing a key for a different request is refused.
@@ -587,6 +656,7 @@ export const orders = pgTable(
       .where(sql`${t.status} = 'pending_payment'`),
     index("orders_status_created_idx").on(t.status, t.createdAt),
     index("orders_email_idx").on(t.email),
+    index("orders_customer_idx").on(t.customerId, t.createdAt),
     index("orders_pending_expiry_idx")
       .on(t.expiresAt)
       .where(sql`${t.status} = 'pending_payment'`),

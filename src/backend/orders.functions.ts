@@ -3,6 +3,8 @@ import { z } from "zod";
 
 import type { CheckoutSummary, CustomerOrderView, PlaceOrderResult } from "@/lib/order-types";
 
+import { getCustomerOrder } from "./customers/customer-orders.server";
+import { currentCustomer } from "./customers/customer-session.server";
 import { guarded } from "./guarded.server";
 import { completeMockPayment, getMockSession, type MockSession } from "./order-payments.server";
 import {
@@ -59,17 +61,21 @@ export const placeOrderFn = createServerFn({ method: "POST" })
       if (tooManyRequests("place-order", 20, TEN_MINUTES)) {
         return { ok: false, code: "RATE_LIMITED", message: RATE_LIMIT_MESSAGE };
       }
-      return placeOrder(data);
+      const customer = await currentCustomer();
+      return placeOrder({ ...data, customerId: customer?.id ?? null });
     }),
   );
 
 // A customer's own order, opened with the private link from their email or the payment return.
 export const getOrderFn = createServerFn({ method: "POST" })
-  .validator(z.object({ orderId: id, token }))
+  .validator(z.object({ orderId: id, token: token.optional() }))
   .handler(({ data }) =>
     guarded("getOrder", async (): Promise<CustomerOrderView | null | "RATE_LIMITED"> => {
       if (tooManyRequests("order-lookup", 150, TEN_MINUTES)) return "RATE_LIMITED";
-      return getOrderByToken(data.orderId, data.token);
+      if (data.token) return getOrderByToken(data.orderId, data.token);
+      // No private link: a signed-in customer may still open their own orders.
+      const customer = await currentCustomer();
+      return customer ? getCustomerOrder(customer.id, data.orderId) : null;
     }),
   );
 

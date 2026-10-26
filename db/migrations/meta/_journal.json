@@ -43,6 +43,13 @@
       "when": 1793028959711,
       "tag": "0005_orders_and_payments",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1793031814466,
+      "tag": "0006_customer_accounts",
+      "breakpoints": true
     }
   ]
 }

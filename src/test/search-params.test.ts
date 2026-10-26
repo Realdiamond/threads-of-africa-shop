@@ -3,7 +3,7 @@ import { randomBytes } from "node:crypto";
 import { describe, expect, it } from "vitest";
 
 import { newAccessToken } from "@/backend/orders.server";
-import { searchFlag, searchText } from "@/lib/search-params";
+import { safeNext, searchFlag, searchText } from "@/lib/search-params";
 
 describe("reading values from the address bar", () => {
   it("gives back the text that was typed even when the router parsed it as a number", () => {
@@ -36,5 +36,22 @@ describe("order access tokens", () => {
     // Without the prefix, an all-digit token would be turned into a number and lose its value.
     expect(typeof JSON.parse("123456789012345678901234567890")).toBe("number");
     expect(randomBytes(24).toString("base64url")).toHaveLength(32);
+  });
+});
+
+describe("where to go after signing in", () => {
+  it("only follows addresses on this site", () => {
+    expect(safeNext("/checkout")).toBe("/checkout");
+    expect(safeNext("/orders/abc?x=1")).toBe("/orders/abc?x=1");
+    for (const bad of [
+      undefined,
+      "",
+      "https://evil.test",
+      "//evil.test",
+      "javascript:alert(1)",
+      "evil",
+    ]) {
+      expect(safeNext(bad)).toBe("/account");
+    }
   });
 });

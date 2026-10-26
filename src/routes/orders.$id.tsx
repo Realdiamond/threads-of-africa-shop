@@ -35,10 +35,11 @@ function OrderPage() {
 
   const query = useQuery({
     queryKey: ["order", id],
-    enabled: Boolean(t),
     gcTime: 0,
     queryFn: async () => {
-      const result = await getOrderFn({ data: { orderId: id, token: t! } });
+      // With the private link the token opens the order; without it, a signed-in customer's own
+      // orders still open.
+      const result = await getOrderFn({ data: { orderId: id, ...(t ? { token: t } : {}) } });
       if (result === "RATE_LIMITED") throw new Error("rate limited");
       return result;
     },
@@ -59,20 +60,6 @@ function OrderPage() {
     <main className="site-width max-w-3xl py-12 sm:py-16">{children}</main>
   );
 
-  if (!t) {
-    return shell(
-      <>
-        <h1 className="page-title">Order not found</h1>
-        <p className="mt-4 text-sm leading-7 text-muted-foreground">
-          This link is incomplete. Please use the full link from your order email, or{" "}
-          <Link to="/contact" className="underline underline-offset-4">
-            contact us
-          </Link>{" "}
-          and we will help.
-        </p>
-      </>,
-    );
-  }
   if (query.isLoading)
     return shell(
       <p role="status" className="text-sm">
@@ -91,9 +78,23 @@ function OrderPage() {
       <>
         <h1 className="page-title">Order not found</h1>
         <p className="mt-4 text-sm leading-7 text-muted-foreground">
-          We couldn't find that order. Check the link in your email, or{" "}
+          {t ? (
+            "We couldn't find that order. Check the link in your email, or "
+          ) : (
+            <>
+              Use the full link from your order email, or{" "}
+              <Link
+                to="/account/login"
+                search={{ next: `/orders/${id}` }}
+                className="underline underline-offset-4"
+              >
+                log in
+              </Link>{" "}
+              to see your orders. Still stuck?{" "}
+            </>
+          )}
           <Link to="/contact" className="underline underline-offset-4">
-            contact us
+            Contact us
           </Link>
           .
         </p>
@@ -216,6 +217,23 @@ function OrderPage() {
           <p>{countryName(order.address.country)}</p>
         </div>
       </section>
+
+      {paid && !order.accountLinked && (
+        <aside
+          className="mt-10 border bg-secondary p-5 text-sm leading-6"
+          aria-label="Create an account"
+        >
+          <p className="font-medium">Want to track this order and check out faster next time?</p>
+          <p className="mt-1 text-muted-foreground">
+            Create an account with {order.email} and this order will be added to it.
+          </p>
+          <Button asChild variant="outline" size="sm" className="mt-3 rounded-none">
+            <Link to="/account/register" search={{ email: order.email }}>
+              Create an account
+            </Link>
+          </Button>
+        </aside>
+      )}
 
       <div className="mt-10 flex flex-wrap gap-3">
         <Button asChild className="rounded-none">

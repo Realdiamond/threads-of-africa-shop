@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 
+import { checkoutPrefillFn } from "@/backend/customers.functions";
 import { cancelCheckoutFn, getCheckoutSummaryFn, placeOrderFn } from "@/backend/orders.functions";
 import { Button } from "@/components/ui/button";
 import { checkCheckoutForm } from "@/lib/checkout-validation";
@@ -142,6 +143,26 @@ function CheckoutPage() {
       });
     }
   }, [search.o, search.t, search.cancelled, search.declined, navigate]);
+
+  // Signed-in customers get their saved details, but only into fields they have not typed in.
+  const prefill = useQuery({
+    queryKey: ["checkout-prefill"],
+    queryFn: () => checkoutPrefillFn(),
+    enabled: ready,
+    gcTime: 0,
+    staleTime: Infinity,
+  });
+  const prefillData = prefill.data;
+  useEffect(() => {
+    if (!prefillData) return;
+    setForm((current) => {
+      const next = { ...current };
+      for (const key of Object.keys(prefillData) as Array<keyof CheckoutForm>) {
+        if (!current[key]) next[key] = prefillData[key];
+      }
+      return next;
+    });
+  }, [prefillData]);
 
   const summary = useQuery({
     queryKey: ["checkout-summary", cartId, form.country],
@@ -295,6 +316,19 @@ function CheckoutPage() {
             <h2 id="co-contact" className="font-display text-2xl">
               Contact
             </h2>
+            {prefill.isSuccess && !prefillData && (
+              <p className="text-sm text-muted-foreground">
+                Checking out as a guest is fine.{" "}
+                <Link
+                  to="/account/login"
+                  search={{ next: "/checkout" }}
+                  className="underline underline-offset-4"
+                >
+                  Log in
+                </Link>{" "}
+                to use your saved details.
+              </p>
+            )}
             <Field
               id="email"
               label="Email"

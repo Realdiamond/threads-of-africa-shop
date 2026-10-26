@@ -174,6 +174,7 @@ export function toCustomerView(order: Order, lines: OrderLine[]): CustomerOrderV
     createdAt: order.createdAt.toISOString(),
     paidAt: order.paidAt?.toISOString() ?? null,
     shippedAt: order.shippedAt?.toISOString() ?? null,
+    accountLinked: order.customerId !== null,
   };
 }
 
@@ -376,6 +377,8 @@ export type PlaceOrderInput = {
   // Chosen by the browser once per checkout attempt: pressing "Pay" twice makes one order.
   idempotencyKey: string;
   form: CheckoutForm;
+  // The signed-in customer placing it, if any.
+  customerId?: string | null | undefined;
 };
 
 type Reserved = { kind: "created"; order: Order } | { kind: "existing"; order: Order };
@@ -514,6 +517,7 @@ async function reserve(
       .values({
         email: form.email,
         cartId: input.cartId,
+        customerId: input.customerId ?? null,
         idempotencyKey: input.idempotencyKey,
         idempotencyHash: hash,
         accessToken: newAccessToken(),

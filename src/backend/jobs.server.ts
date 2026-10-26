@@ -1,6 +1,7 @@
 import { purgeStrayUploads } from "./admin/media.server";
 import { purgeExpiredSessions } from "./auth/admin-auth.server";
 import { purgeExpiredCarts } from "./cart.server";
+import { purgeExpiredCustomerData } from "./customers/customer-auth.server";
 import { processEmailOutbox, purgeOldEmails } from "./email/processor.server";
 import { errorFields, log } from "./log.server";
 import { expireStaleOrders } from "./orders.server";
@@ -36,9 +37,10 @@ async function once(name: string, run: () => Promise<void>) {
 }
 
 export async function runMaintenance() {
-  const [carts, sessions, uploads, emails] = await Promise.all([
+  const [carts, sessions, , uploads, emails] = await Promise.all([
     purgeExpiredCarts(),
     purgeExpiredSessions().then(() => 0),
+    purgeExpiredCustomerData().then(() => 0),
     purgeStrayUploads(),
     purgeOldEmails(),
   ]);

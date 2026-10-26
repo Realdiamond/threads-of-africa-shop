@@ -27,6 +27,7 @@ import { createCart } from "@/backend/cart.server";
 import * as schema from "@/backend/db/schema";
 import {
   categories,
+  customers,
   emailOutbox,
   orderEvents,
   orderLines,
@@ -133,7 +134,7 @@ describe.skipIf(!url)("orders and payments (Postgres)", () => {
 
   beforeEach(async () => {
     await db.execute(
-      sql`truncate orders, webhook_events, email_outbox, cart_lines, carts, product_images, variants, products, categories, store_settings, shipping_zones, audit_log restart identity cascade`,
+      sql`truncate orders, customers, webhook_events, email_outbox, cart_lines, carts, product_images, variants, products, categories, store_settings, shipping_zones, audit_log restart identity cascade`,
     );
     const [women] = await db
       .insert(categories)
@@ -586,6 +587,32 @@ describe.skipIf(!url)("orders and payments (Postgres)", () => {
       const [order] = await db.select().from(orders);
       expect(order!.status).toBe("cancelled");
       expect(await stockOf(dressM)).toBe(3);
+    });
+
+    it("links the order to the customer who was signed in", async () => {
+      const { provider } = fakeProvider();
+      const [customer] = await db
+        .insert(customers)
+        .values({ email: "buyer@example.com", name: "Ada", emailVerifiedAt: new Date() })
+        .returning();
+      const cartId = await cartWith(dressM, 1);
+      const result = await placeOrder(
+        {
+          cartId,
+          rateId: await rate("NG", "Standard"),
+          idempotencyKey: "signed-in-key-0000000",
+          form: form(),
+          customerId: customer!.id,
+        },
+        db,
+        provider,
+      );
+      expect(result.ok).toBe(true);
+      const [order] = await db.select().from(orders);
+      expect(order!.customerId).toBe(customer!.id);
+      // A guest order stays unlinked.
+      const guest = await placed(provider, shirt, 1);
+      expect(guest.customerId).toBeNull();
     });
 
     it("stays closed with no payment provider", async () => {
