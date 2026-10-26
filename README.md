@@ -84,6 +84,14 @@ Railway sets `PORT` and `NODE_ENV` for you; `bun run start` sets `NODE_ENV=produ
 - Stock is taken when an order is placed (`orders.server.ts`) and returned exactly once if it is cancelled, expires or is refunded.
 - Background jobs run inside the web process (`src/backend/jobs.server.ts`): email outbox every 15 s, release of unpaid orders every minute, housekeeping hourly. One Railway service is enough.
 
+## Known limits (by design, for now)
+
+- **One currency: US dollars.** Prices, delivery and tax are all in USD (Stripe charges USD). Selling in another currency means changing the catalog and checkout; ask a developer.
+- Refunds from the admin are **full refunds**. A partial refund can be made in Stripe; it is noted on the order's history but the order stays "paid".
+- No discount codes, gift cards or wishlists-per-account (favorites are kept in the browser).
+- Tax is a percentage of the items per delivery zone; it is not calculated per state or product type.
+- One web instance: the in-memory rate limiter and background jobs assume a single process (the order logic itself is safe with several).
+
 ## Project layout
 
 - `src/routes/` — pages and server routes (file-based routing); `admin.*` is the dashboard, `account.*` customer accounts, `api.*` raw endpoints (Stripe webhook, uploads, CSV exports)

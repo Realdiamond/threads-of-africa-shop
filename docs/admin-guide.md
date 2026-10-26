@@ -22,6 +22,8 @@ For the owner and team. Everything is at **`/admin`** (sign in with the email an
 
 ## Products
 
+Prices are in **US dollars**.
+
 `Products → Add a product`: title, descriptions, **Details & fit** and **Fabric & care** (shown on the product page), category, tags (the first tag shows on the card; use `new arrival` for the *New arrivals* filter), sizes with price and stock, and photos (the first photo is the main one; drag-free ordering by the arrows; large photos are shrunk automatically).
 
 - Set the status to **Active** to put it on sale, **Draft** to keep it hidden, **Archived** to retire it.
