@@ -34,9 +34,13 @@ import { deliverableCountries, quoteShipping, taxFor } from "./shipping.server";
 import { siteUrl } from "./site-url.server";
 
 // How long an unpaid order keeps its items out of stock. Stripe's checkout page must stay open for
-// at least 30 minutes, so the page expires at 31 and the shop's own hold a few minutes after that.
-const HOLD_MINUTES = 35;
-const PAYMENT_PAGE_MINUTES = 31;
+// at least 30 minutes, so the page expires at 35 (a safe margin over the minimum) and the shop's own
+// hold a few minutes after that.
+const HOLD_MINUTES = 40;
+const PAYMENT_PAGE_MINUTES = 35;
+// Someone starting many checkouts and never paying would keep stock off sale, so each email
+// address may have only a few unfinished ones at a time.
+const MAX_UNPAID_PER_EMAIL = 3;
 // Past the hold, an order whose payment page could not be closed is cancelled anyway after this.
 const EXPIRY_GRACE_MS = 60 * 60 * 1000;
 
@@ -374,9 +378,7 @@ export type PlaceOrderInput = {
   form: CheckoutForm;
 };
 
-type Reserved =
-  | { kind: "created"; order: Order; supersededSessionIds: string[] }
-  | { kind: "existing"; order: Order };
+type Reserved = { kind: "created"; order: Order } | { kind: "existing"; order: Order };
 
 const requestHash = (input: PlaceOrderInput, form: CheckoutForm) =>
   createHash("sha256")
@@ -442,17 +444,28 @@ async function reserve(
       );
     }
 
-    // A bag has at most one unpaid order: starting again replaces the earlier attempt.
+    // A bag has at most one unpaid order: starting again replaces the earlier attempt (whose
+    // payment page was closed before we got here).
     const earlier = await tx
-      .select({ id: orders.id, sessionId: orders.providerSessionId })
+      .select({ id: orders.id })
       .from(orders)
       .where(and(eq(orders.cartId, input.cartId), eq(orders.status, "pending_payment")))
       .for("update");
-    const supersededSessionIds: string[] = [];
     for (const old of earlier) {
-      if (await cancelPendingInTx(tx, old.id, "Replaced by a new checkout", "customer")) {
-        if (old.sessionId) supersededSessionIds.push(old.sessionId);
-      }
+      await cancelPendingInTx(tx, old.id, "Replaced by a new checkout", "customer");
+    }
+
+    const [{ unpaid } = { unpaid: 0 }] = await tx
+      .select({ unpaid: sql<number>`count(*)::int` })
+      .from(orders)
+      .where(and(eq(orders.email, form.email), eq(orders.status, "pending_payment")));
+    if (unpaid >= MAX_UNPAID_PER_EMAIL) {
+      return abortWith(
+        fail(
+          "PAYMENT_UNAVAILABLE",
+          "You already have several unfinished checkouts. Please complete or wait for them to expire, or contact us.",
+        ),
+      );
     }
 
     const lines = await readCheckoutLines(tx, input.cartId);
@@ -547,7 +560,7 @@ async function reserve(
       `Order placed for ${formatCents(created.totalCents, currency)}; waiting for payment`,
       "customer",
     );
-    return { kind: "created", order: created, supersededSessionIds };
+    return { kind: "created", order: created };
   });
 }
 
@@ -609,6 +622,36 @@ async function ensurePaymentPage(
   }
 }
 
+// Before a bag starts a new checkout, the payment page of its earlier unpaid order has to be
+// closed for good. If it cannot be (it may be being paid right now), the new checkout waits;
+// otherwise the customer could end up paying twice.
+async function closeEarlierPaymentPage(
+  input: PlaceOrderInput,
+  provider: PaymentProvider,
+  db: Db,
+): Promise<Extract<PlaceOrderResult, { ok: false }> | null> {
+  const [earlier] = await db
+    .select({
+      sessionId: orders.providerSessionId,
+      providerName: orders.paymentProvider,
+      key: orders.idempotencyKey,
+    })
+    .from(orders)
+    .where(and(eq(orders.cartId, input.cartId), eq(orders.status, "pending_payment")));
+  // No earlier attempt, no page to close, or this is the same attempt being repeated.
+  if (!earlier?.sessionId || earlier.key === input.idempotencyKey) return null;
+  if (earlier.providerName !== provider.name) return null;
+  try {
+    if ((await provider.expireSession(earlier.sessionId)) === "expired") return null;
+  } catch (error) {
+    log("warn", "could not close the earlier payment page", errorFields(error));
+  }
+  return fail(
+    "PAYMENT_UNAVAILABLE",
+    "Your last payment attempt is still being confirmed. Please wait a minute and try again — and check your email in case it went through.",
+  );
+}
+
 export async function placeOrder(
   input: PlaceOrderInput,
   db: Db = getDb(),
@@ -618,6 +661,9 @@ export async function placeOrder(
   const form = normaliseCheckoutForm(input.form);
   const problem = checkCheckoutForm(form);
   if (problem) return fail("INVALID", problem.message);
+
+  const blocked = await closeEarlierPaymentPage(input, provider, db);
+  if (blocked) return blocked;
 
   let reserved: Reserved;
   try {
@@ -637,16 +683,6 @@ export async function placeOrder(
     }
   }
 
-  if (reserved.kind === "created") {
-    // The earlier attempt's payment page must not stay payable.
-    for (const sessionId of reserved.supersededSessionIds) {
-      provider
-        .expireSession(sessionId)
-        .catch((error) =>
-          log("warn", "could not close an earlier payment page", errorFields(error)),
-        );
-    }
-  }
   return ensurePaymentPage(reserved.order, provider, db);
 }
 

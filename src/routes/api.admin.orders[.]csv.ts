@@ -18,6 +18,9 @@ export const Route = createFileRoute("/api/admin/orders.csv")({
           const admin = await currentAdmin();
           if (!admin || admin.status !== "active")
             return new Response("Please sign in again.", { status: 401 });
+          // The list holds every customer's name and address, so only owners can take a copy.
+          if (admin.role !== "owner")
+            return new Response("Only an owner can download the orders.", { status: 403 });
           if (tooManyRequests("order-export", 20, 10 * 60 * 1000)) {
             return new Response("Too many downloads. Wait a few minutes.", { status: 429 });
           }

@@ -147,3 +147,20 @@ export function orderAttentionEmail(
     button: { label: "Open the order", url: adminUrl },
   });
 }
+
+// Sent to the shop when a payment came in that matches none of its orders.
+export function unmatchedPaymentEmail(
+  shop: Shop,
+  details: { amount: string; paymentId: string; why: string },
+): EmailContent {
+  return renderEmail({
+    ...shop,
+    subject: "A payment needs checking",
+    heading: "A payment could not be matched to an order",
+    paragraphs: [
+      `A payment of ${details.amount} was received, but ${details.why}. No order was changed.`,
+      "Please look it up in your payment dashboard and either refund it or contact the customer.",
+    ],
+    details: [`Payment reference: ${details.paymentId}`],
+  });
+}

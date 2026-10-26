@@ -11,8 +11,8 @@ export { WebhookSignatureError } from "./payments/types.server";
 type Env = Record<string, string | undefined>;
 
 // Which payment provider the shop uses, decided purely by environment variables:
-//   PAYMENTS_PROVIDER=mock                  a fake "pay" page for testing (never in production
-//                                           unless ALLOW_MOCK_PAYMENTS=true is also set)
+//   PAYMENTS_PROVIDER=mock                  a fake "pay" page for testing (development only,
+//                                           or ALLOW_MOCK_PAYMENTS=true on a staging copy)
 //   STRIPE_SECRET_KEY + STRIPE_WEBHOOK_SECRET   real Stripe payments
 // With neither, checkout stays closed. A Stripe key without its webhook secret also keeps checkout
 // closed, because orders are only ever confirmed from the verified webhook; taking money we
@@ -26,11 +26,22 @@ function warnOnce(message: string) {
   log("warn", message);
 }
 
+// The pretend provider takes real orders without real money, so it fails closed: it works only
+// when the process says it is a development or test run, or when ALLOW_MOCK_PAYMENTS=true is set
+// on purpose (for a staging copy). It is never allowed alongside a live Stripe key.
+function mockAllowed(env: Env): boolean {
+  if (env["STRIPE_SECRET_KEY"]?.includes("_live_")) return false;
+  if (env["ALLOW_MOCK_PAYMENTS"] === "true") return true;
+  const mode = env["NODE_ENV"];
+  const deployed = Boolean(env["RAILWAY_ENVIRONMENT_NAME"] || env["RAILWAY_PUBLIC_DOMAIN"]);
+  return (mode === "development" || mode === "test") && !deployed;
+}
+
 export function getPaymentProvider(env: Env = process.env): PaymentProvider | null {
   if (env["PAYMENTS_PROVIDER"] === "mock") {
-    if (env["NODE_ENV"] === "production" && env["ALLOW_MOCK_PAYMENTS"] !== "true") {
+    if (!mockAllowed(env)) {
       warnOnce(
-        "PAYMENTS_PROVIDER=mock is ignored in production (set ALLOW_MOCK_PAYMENTS=true to force it)",
+        "PAYMENTS_PROVIDER=mock is ignored here (it only runs in development, or with ALLOW_MOCK_PAYMENTS=true, and never with a live Stripe key); checkout stays closed",
       );
       return null;
     }
@@ -53,7 +64,11 @@ export function getPaymentProvider(env: Env = process.env): PaymentProvider | nu
   const key = `stripe:${secretKey}:${webhookSecret}`;
   if (cached?.key !== key) {
     const client = new Stripe(secretKey, { maxNetworkRetries: 2, timeout: 20_000 });
-    cached = { key, provider: createStripeProvider(client, webhookSecret) };
+    // Events from the other mode (test events sent to a live shop, or the reverse) are ignored.
+    cached = {
+      key,
+      provider: createStripeProvider(client, webhookSecret, secretKey.includes("_live_")),
+    };
   }
   return cached.provider;
 }

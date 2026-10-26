@@ -11,17 +11,27 @@ const OUTBOX_EVERY_MS = 15_000;
 const ORDER_EXPIRY_EVERY_MS = 60_000;
 const MAINTENANCE_EVERY_MS = 60 * 60 * 1000;
 
-const running = new Set<string>();
+// If a job has been "running" far longer than any run should take (a database connection that
+// silently went away, say), it is presumed stuck and the next tick starts it again. Every job is
+// safe to overlap with itself, so this can only help.
+const STALL_AFTER_MS = 5 * 60 * 1000;
+const running = new Map<string, number>();
 
 async function once(name: string, run: () => Promise<void>) {
-  if (running.has(name)) return;
-  running.add(name);
+  const startedAt = running.get(name);
+  if (startedAt !== undefined) {
+    if (Date.now() - startedAt < STALL_AFTER_MS) return;
+    log("error", `background job "${name}" has been running for over 5 minutes; starting it again`);
+  }
+  const mine = Date.now();
+  running.set(name, mine);
   try {
     await run();
   } catch (error) {
     log("error", `background job "${name}" failed`, errorFields(error));
   } finally {
-    running.delete(name);
+    // Only clear our own mark, not that of a newer run that replaced a stuck one.
+    if (running.get(name) === mine) running.delete(name);
   }
 }
 

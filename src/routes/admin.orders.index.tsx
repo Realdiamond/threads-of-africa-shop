@@ -53,6 +53,8 @@ const TABS: Array<{ label: string; value: OrderStatus | undefined }> = [
 function OrdersPage() {
   const result = Route.useLoaderData();
   const search = Route.useSearch();
+  const { admin } = Route.useRouteContext();
+  const isOwner = admin?.role === "owner";
   const navigate = useNavigate({ from: Route.fullPath });
   const [term, setTerm] = useState(search.search ?? "");
 
@@ -67,11 +69,13 @@ function OrdersPage() {
         title="Orders"
         description="Every order placed on the website. Paid orders are waiting for you to pack and send them."
         actions={
-          <Button asChild variant="outline">
-            <a href={`/api/admin/orders.csv${exportQuery.size ? `?${exportQuery}` : ""}`}>
-              Download as spreadsheet
-            </a>
-          </Button>
+          isOwner && (
+            <Button asChild variant="outline">
+              <a href={`/api/admin/orders.csv${exportQuery.size ? `?${exportQuery}` : ""}`}>
+                Download as spreadsheet
+              </a>
+            </Button>
+          )
         }
       />
 

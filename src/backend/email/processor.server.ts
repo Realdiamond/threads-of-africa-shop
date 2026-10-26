@@ -11,6 +11,8 @@ const LEASE_MINUTES = 5;
 // Wait before the next try after attempt 1, 2, 3...: 1 min, 5 min, 30 min, 2 h, 12 h.
 const BACKOFF_MINUTES = [1, 5, 30, 120, 720];
 
+let warnedNoProvider = false;
+
 export type ProcessResult = { skipped: boolean; sent: number; retrying: number; failed: number };
 
 // Sends due emails. Each one is claimed first (its retry time is pushed out as a lease), then sent
@@ -21,7 +23,16 @@ export async function processEmailOutbox(
 ): Promise<ProcessResult> {
   const db = options.db ?? getDb();
   const provider = options.provider === undefined ? getEmailProvider() : options.provider;
-  if (!provider) return { skipped: true, sent: 0, retrying: 0, failed: 0 };
+  if (!provider) {
+    if (!warnedNoProvider) {
+      warnedNoProvider = true;
+      log(
+        "warn",
+        "no email service is configured (set RESEND_API_KEY): emails are being queued but not sent",
+      );
+    }
+    return { skipped: true, sent: 0, retrying: 0, failed: 0 };
+  }
 
   const settings = await getSettings(db);
   const from = process.env["EMAIL_FROM"] ?? `${settings.storeName} <${settings.contactEmail}>`;

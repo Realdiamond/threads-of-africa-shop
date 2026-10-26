@@ -52,6 +52,29 @@ function Dashboard() {
         }
       />
 
+      {data.attention.length > 0 && (
+        <Notice kind="warning" className="mb-6">
+          <p className="font-medium">Some orders need you to look at them:</p>
+          <ul className="mt-1 list-disc pl-5">
+            {data.attention.map((item) => (
+              <li key={item.id}>
+                <Link
+                  to="/admin/orders/$id"
+                  params={{ id: item.id }}
+                  className="underline underline-offset-4"
+                >
+                  {formatOrderNumber(item.number)}
+                </Link>{" "}
+                —{" "}
+                {item.reason === "payment_mismatch"
+                  ? "a payment arrived for the wrong amount (check it in Stripe)"
+                  : "paid after the hold expired and some items were out of stock (ship what you can, or refund)"}
+              </li>
+            ))}
+          </ul>
+        </Notice>
+      )}
+
       {data.counts.active === 0 && (
         <Notice kind="warning" className="mb-6">
           No products are live in the shop yet. Add a product and set its status to Active to

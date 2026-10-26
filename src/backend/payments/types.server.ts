@@ -44,6 +44,15 @@ export type PaymentEvent =
       amountRefundedCents: number;
       fullyRefunded: boolean;
     }
+  // A customer disputed the charge with their bank (a chargeback).
+  | {
+      kind: "dispute";
+      eventId: string;
+      type: string;
+      paymentId: string;
+      amountCents: number;
+      reason: string;
+    }
   // Valid events we have no use for (other products on the same account, unrelated updates).
   | { kind: "ignored"; eventId: string; type: string };
 

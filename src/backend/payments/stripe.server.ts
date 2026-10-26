@@ -14,7 +14,11 @@ export type StripeClient = {
 const paymentIntentId = (value: string | { id: string } | null | undefined) =>
   typeof value === "string" ? value : (value?.id ?? null);
 
-export function createStripeProvider(client: StripeClient, webhookSecret: string): PaymentProvider {
+export function createStripeProvider(
+  client: StripeClient,
+  webhookSecret: string,
+  livemode: boolean,
+): PaymentProvider {
   return {
     name: "stripe",
 
@@ -107,6 +111,8 @@ export function createStripeProvider(client: StripeClient, webhookSecret: string
         throw new WebhookSignatureError();
       }
       const base = { eventId: event.id, type: event.type };
+      // A test-mode event must never touch a live shop, nor a live event a test shop.
+      if (event.livemode !== livemode) return { kind: "ignored", ...base };
 
       switch (event.type) {
         case "checkout.session.completed":
@@ -153,6 +159,18 @@ export function createStripeProvider(client: StripeClient, webhookSecret: string
             paymentId,
             amountRefundedCents: charge.amount_refunded,
             fullyRefunded: charge.refunded,
+          };
+        }
+        case "charge.dispute.created": {
+          const dispute = event.data.object;
+          const paymentId = paymentIntentId(dispute.payment_intent);
+          if (!paymentId) return { kind: "ignored", ...base };
+          return {
+            kind: "dispute",
+            ...base,
+            paymentId,
+            amountCents: dispute.amount,
+            reason: dispute.reason,
           };
         }
         default:

@@ -35,7 +35,12 @@ import {
   variants,
   webhookEvents,
 } from "@/backend/db/schema";
-import { handlePaymentEvent, refundOrder } from "@/backend/order-payments.server";
+import {
+  completeMockPayment,
+  getMockSession,
+  handlePaymentEvent,
+  refundOrder,
+} from "@/backend/order-payments.server";
 import {
   cancelCheckoutByToken,
   checkoutSummary,
@@ -535,6 +540,44 @@ describe.skipIf(!url)("orders and payments (Postgres)", () => {
       ).toBe(0);
     });
 
+    it("will not start a second checkout while the first payment page may still be paid", async () => {
+      const { provider, calls, state } = fakeProvider();
+      const cartId = await cartWith(dressM, 1);
+      const first = await placed(provider, dressM, 1, { cartId });
+
+      state.expire = "not_open"; // already paid, or being paid right now
+      const blocked = await place(provider, dressM, 1, { cartId, form: { name: "Ada Obi-Eze" } });
+      expect(blocked.result).toMatchObject({ ok: false, code: "PAYMENT_UNAVAILABLE" });
+      state.expire = "throw"; // cannot find out
+      const unknown = await place(provider, dressM, 1, { cartId, form: { name: "Ada Obi-Eze" } });
+      expect(unknown.result).toMatchObject({ ok: false, code: "PAYMENT_UNAVAILABLE" });
+
+      // The first order is untouched and no second one exists.
+      expect((await orderRow(first.id)).status).toBe("pending_payment");
+      expect(await db.select().from(orders)).toHaveLength(1);
+      expect(await stockOf(dressM)).toBe(2);
+      expect(calls.created).toHaveLength(1);
+
+      // Repeating the very same request is not "a second checkout".
+      state.expire = "not_open";
+      const repeat = await db.select({ key: orders.idempotencyKey }).from(orders);
+      const again = await place(provider, dressM, 1, { cartId, key: repeat[0]!.key! });
+      expect(again.result.ok).toBe(true);
+    });
+
+    it("limits unfinished checkouts per email address", async () => {
+      const { provider } = fakeProvider();
+      for (let i = 0; i < 3; i += 1)
+        await placed(provider, shirt, 1, { form: { email: "same@example.com" } });
+      const fourth = await place(provider, shirt, 1, { form: { email: "same@example.com" } });
+      expect(fourth.result).toMatchObject({ ok: false, code: "PAYMENT_UNAVAILABLE" });
+      expect(await stockOf(shirt)).toBe(7);
+      // Someone else is not affected.
+      expect(
+        (await place(provider, shirt, 1, { form: { email: "other@example.com" } })).result.ok,
+      ).toBe(true);
+    });
+
     it("gives the items back when the payment page cannot be opened", async () => {
       const { provider, state } = fakeProvider();
       state.failCreate = true;
@@ -786,8 +829,8 @@ describe.skipIf(!url)("orders and payments (Postgres)", () => {
       const after = await orderRow(order.id);
       expect(after.status).toBe("pending_payment");
       expect(after.paidAt).toBeNull();
-      // It must not quietly expire either: a person has to look.
-      expect(after.expiresAt).toBeNull();
+      // It must not quietly expire either: a person gets a week to look.
+      expect(after.expiresAt!.getTime()).toBeGreaterThan(Date.now() + 6 * 24 * 3_600_000);
       expect(await eventKinds(order.id)).toEqual([
         "created",
         "payment_mismatch",
@@ -803,9 +846,17 @@ describe.skipIf(!url)("orders and payments (Postgres)", () => {
       expect((await orderRow(order.id)).status).toBe("paid");
     });
 
-    it("quietly ignores events for orders it does not know or that belong to another payment page", async () => {
+    it("ignores events for orders it does not know, but tells the shop about verified payments it cannot place", async () => {
       const { provider } = fakeProvider();
       const order = await placed(provider, dressM, 1);
+      // Not an order id at all: another product on the same Stripe account. Nothing to report.
+      expect(await handlePaymentEvent("stripe", paid(order, { orderId: "not-a-uuid" }), db)).toBe(
+        "ignored",
+      );
+      expect(await emails()).toHaveLength(0);
+
+      // An order id we do not have, or a different payment page than the order's: money arrived
+      // that we cannot attach to anything, so a person is told.
       expect(
         await handlePaymentEvent(
           "stripe",
@@ -813,13 +864,85 @@ describe.skipIf(!url)("orders and payments (Postgres)", () => {
           db,
         ),
       ).toBe("ignored");
-      expect(await handlePaymentEvent("stripe", paid(order, { orderId: "not-a-uuid" }), db)).toBe(
-        "ignored",
-      );
       expect(
         await handlePaymentEvent("stripe", paid(order, { sessionId: "cs_someone_else" }), db),
       ).toBe("ignored");
+      const alerts = await emails();
+      expect(alerts).toHaveLength(2);
+      expect(alerts.every((m) => m.kind === "order_attention")).toBe(true);
+      expect(alerts[0]!.textBody).toContain("could not be matched");
+      expect(alerts[0]!.textBody).toContain(`pi_${order.number}`);
       expect((await orderRow(order.id)).status).toBe("pending_payment");
+
+      // A payment that came through a different provider than the order was started with is ignored.
+      expect(await handlePaymentEvent("mock", paid(order), db)).toBe("ignored");
+      expect((await orderRow(order.id)).status).toBe("pending_payment");
+    });
+
+    it("tells the shop about a chargeback without changing the order", async () => {
+      const { provider } = fakeProvider();
+      const order = await placed(provider, dressM, 1);
+      await handlePaymentEvent("stripe", paid(order), db);
+      const dispute: PaymentEvent = {
+        kind: "dispute",
+        eventId: "evt_dp",
+        type: "charge.dispute.created",
+        paymentId: `pi_${order.number}`,
+        amountCents: order.totalCents,
+        reason: "fraudulent",
+      };
+      expect(await handlePaymentEvent("stripe", dispute, db)).toBe("processed");
+      expect((await orderRow(order.id)).status).toBe("paid");
+      expect(await eventKinds(order.id)).toContain("dispute");
+      const alert = (await emails()).filter((m) => m.kind === "order_attention");
+      expect(alert).toHaveLength(1);
+      expect(alert[0]!.textBody).toContain("disputed");
+      expect(alert[0]!.toEmail).toBe("info@thethreadsofafrica.com");
+      // The same event twice, or a dispute for an unknown payment, changes nothing more.
+      expect(await handlePaymentEvent("stripe", dispute, db)).toBe("duplicate");
+      expect(
+        await handlePaymentEvent(
+          "stripe",
+          { ...dispute, eventId: "evt_dp2", paymentId: "pi_nope" },
+          db,
+        ),
+      ).toBe("ignored");
+    });
+
+    it("shows a wrong-amount payment on the dashboard until someone deals with it", async () => {
+      const { provider } = fakeProvider();
+      const order = await placed(provider, dressM, 1);
+      await handlePaymentEvent("stripe", paid(order, { amountCents: 5 }), db);
+      expect((await adminDashboard(db)).attention).toEqual([
+        { id: order.id, number: order.number, reason: "payment_mismatch" },
+      ]);
+    });
+
+    it("only lets the test payment page act on orders that were started on it", async () => {
+      const { provider } = fakeProvider();
+      const stripeOrder = await placed(provider, dressM, 1);
+      const before = process.env["PAYMENTS_PROVIDER"];
+      process.env["PAYMENTS_PROVIDER"] = "mock";
+      try {
+        const sessionId = stripeOrder.providerSessionId!;
+        expect(await getMockSession(sessionId, db)).toBeNull();
+        expect(await completeMockPayment(sessionId, "paid", db)).toEqual({ ok: false });
+        expect((await orderRow(stripeOrder.id)).status).toBe("pending_payment");
+
+        // An order created on the mock provider can be paid on it.
+        const { createMockProvider } = await import("@/backend/payments/mock.server");
+        const mockOrder = await placed(createMockProvider(), shirt, 1);
+        expect(await getMockSession(mockOrder.providerSessionId!, db)).toMatchObject({
+          number: mockOrder.number,
+        });
+        expect(await completeMockPayment(mockOrder.providerSessionId!, "paid", db)).toMatchObject({
+          ok: true,
+        });
+        expect((await orderRow(mockOrder.id)).status).toBe("paid");
+      } finally {
+        if (before === undefined) delete process.env["PAYMENTS_PROVIDER"];
+        else process.env["PAYMENTS_PROVIDER"] = before;
+      }
     });
 
     it("cancels and restocks when the payment page expires unpaid", async () => {
@@ -909,6 +1032,11 @@ describe.skipIf(!url)("orders and payments (Postgres)", () => {
 
         const alert = (await emails()).find((m) => m.kind === "order_alert")!;
         expect(alert.textBody).toContain("short on stock");
+        expect(await eventKinds(order.id)).toContain("late_payment_short");
+        const board = await adminDashboard(db);
+        expect(board.attention).toEqual([
+          { id: order.id, number: order.number, reason: "late_payment_short" },
+        ]);
 
         // Refunding with "return to stock" gives back only what was taken.
         const result = await refundOrder(actor, order.id, { restock: true }, db, provider);
@@ -1021,7 +1149,7 @@ describe.skipIf(!url)("orders and payments (Postgres)", () => {
         {
           paymentId: `pi_${order.number}`,
           amountCents: order.totalCents,
-          idempotencyKey: `refund-${order.id}`,
+          idempotencyKey: `refund-${order.id}-0`,
           orderId: order.id,
         },
       ]);
@@ -1035,6 +1163,22 @@ describe.skipIf(!url)("orders and payments (Postgres)", () => {
       });
       expect(calls.refunds).toHaveLength(1);
       expect(await stockOf(dressM)).toBe(3);
+    });
+
+    it("uses a fresh key to retry after the provider failed, and records every request", async () => {
+      const { provider, calls, state } = fakeProvider();
+      const order = await paidOrder(provider);
+      state.failRefund = true;
+      await refundOrder(actor, order.id, { restock: true }, db, provider);
+      expect(await eventKinds(order.id)).toContain("refund_failed");
+      state.failRefund = false;
+      expect(await refundOrder(actor, order.id, { restock: true }, db, provider)).toEqual({
+        ok: true,
+      });
+      expect(calls.refunds.map((r) => r.idempotencyKey)).toEqual([`refund-${order.id}-1`]);
+      const actions = (await recentAudit(db)).map((a) => a.action);
+      expect(actions.filter((a) => a === "order_refund_requested")).toHaveLength(2);
+      expect(actions).toContain("order_refunded");
     });
 
     it("keeps the items off sale when told not to restock", async () => {

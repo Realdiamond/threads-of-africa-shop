@@ -38,8 +38,8 @@ const session = (over: Record<string, unknown> = {}) => ({
   ...over,
 });
 
-function signed(type: string, object: unknown, secret = SECRET, id = "evt_1") {
-  const payload = JSON.stringify({ id, object: "event", type, data: { object } });
+function signed(type: string, object: unknown, secret = SECRET, id = "evt_1", livemode = false) {
+  const payload = JSON.stringify({ id, object: "event", livemode, type, data: { object } });
   const header = real.webhooks.generateTestHeaderString({ payload, secret });
   return { payload, header };
 }
@@ -74,7 +74,7 @@ describe("Stripe checkout sessions", () => {
 
   it("sends exactly what the order says, and a key that makes retries safe", async () => {
     const { client, create } = fakeClient();
-    const result = await createStripeProvider(client, SECRET).createCheckoutSession(input);
+    const result = await createStripeProvider(client, SECRET, false).createCheckoutSession(input);
     expect(result).toEqual({
       sessionId: "cs_test_123",
       url: "https://checkout.stripe.com/c/pay/cs_test_123",
@@ -118,7 +118,7 @@ describe("Stripe checkout sessions", () => {
 
   it("leaves out delivery and tax lines that cost nothing", async () => {
     const { client, create } = fakeClient();
-    await createStripeProvider(client, SECRET).createCheckoutSession({
+    await createStripeProvider(client, SECRET, false).createCheckoutSession({
       ...input,
       shipping: { label: "Delivery — Free", cents: 0 },
       tax: { label: "Tax", cents: 0 },
@@ -129,14 +129,14 @@ describe("Stripe checkout sessions", () => {
   it("fails loudly if Stripe returns no page to send the customer to", async () => {
     const { client, create } = fakeClient();
     create.mockResolvedValue({ id: "cs_1", url: null });
-    await expect(createStripeProvider(client, SECRET).createCheckoutSession(input)).rejects.toThrow(
-      /address/,
-    );
+    await expect(
+      createStripeProvider(client, SECRET, false).createCheckoutSession(input),
+    ).rejects.toThrow(/address/);
   });
 
   it("treats a session that can no longer be closed as not open, but surfaces real errors", async () => {
     const { client, expire } = fakeClient();
-    const provider = createStripeProvider(client, SECRET);
+    const provider = createStripeProvider(client, SECRET, false);
     expect(await provider.expireSession("cs_1")).toBe("expired");
     expire.mockRejectedValueOnce(
       new Stripe.errors.StripeInvalidRequestError({
@@ -151,7 +151,7 @@ describe("Stripe checkout sessions", () => {
 
   it("refunds with an idempotency key and treats an earlier refund as done", async () => {
     const { client, refund } = fakeClient();
-    const provider = createStripeProvider(client, SECRET);
+    const provider = createStripeProvider(client, SECRET, false);
     expect(
       await provider.refund({
         paymentId: "pi_1",
@@ -197,7 +197,7 @@ describe("Stripe checkout sessions", () => {
 });
 
 describe("Stripe webhooks", () => {
-  const provider = createStripeProvider(fakeClient().client, SECRET);
+  const provider = createStripeProvider(fakeClient().client, SECRET, false);
 
   it("accepts a genuinely signed payment and reads the amount from it", () => {
     const { payload, header } = signed("checkout.session.completed", session());
@@ -228,6 +228,7 @@ describe("Stripe webhooks", () => {
     const payload = JSON.stringify({
       id: "evt_old",
       object: "event",
+      livemode: false,
       type: "checkout.session.completed",
       data: { object: session() },
     });
@@ -313,6 +314,43 @@ describe("Stripe webhooks", () => {
     });
   });
 
+  it("ignores events from the other mode, so test payments never touch a live shop", () => {
+    const live = createStripeProvider(fakeClient().client, SECRET, true);
+    const testEvent = signed("checkout.session.completed", session());
+    expect(live.parseWebhook(testEvent.payload, testEvent.header)).toMatchObject({
+      kind: "ignored",
+    });
+    const liveEvent = signed("checkout.session.completed", session(), SECRET, "evt_live", true);
+    expect(live.parseWebhook(liveEvent.payload, liveEvent.header)).toMatchObject({ kind: "paid" });
+    // ...and a test shop ignores live events.
+    expect(provider.parseWebhook(liveEvent.payload, liveEvent.header)).toMatchObject({
+      kind: "ignored",
+    });
+  });
+
+  it("reports a chargeback", () => {
+    const event = signed(
+      "charge.dispute.created",
+      {
+        id: "dp_1",
+        object: "dispute",
+        payment_intent: "pi_123",
+        amount: 26800,
+        reason: "fraudulent",
+      },
+      SECRET,
+      "evt_dp",
+    );
+    expect(provider.parseWebhook(event.payload, event.header)).toEqual({
+      kind: "dispute",
+      eventId: "evt_dp",
+      type: "charge.dispute.created",
+      paymentId: "pi_123",
+      amountCents: 26800,
+      reason: "fraudulent",
+    });
+  });
+
   it("ignores payments that did not come from this shop's checkout", () => {
     const foreign = signed(
       "checkout.session.completed",
@@ -344,17 +382,37 @@ describe("choosing the payment provider", () => {
     ).toBe("stripe-live");
   });
 
-  it("only allows the pretend provider when asked, and never by accident in production", () => {
-    expect(getPaymentProvider({ PAYMENTS_PROVIDER: "mock" })?.name).toBe("mock");
-    expect(paymentMode({ PAYMENTS_PROVIDER: "mock" })).toBe("test-page");
-    expect(getPaymentProvider({ PAYMENTS_PROVIDER: "mock", NODE_ENV: "production" })).toBeNull();
+  it("only allows the pretend provider in development, or when asked on purpose", () => {
+    const mock = { PAYMENTS_PROVIDER: "mock" };
+    expect(getPaymentProvider({ ...mock, NODE_ENV: "development" })?.name).toBe("mock");
+    expect(getPaymentProvider({ ...mock, NODE_ENV: "test" })?.name).toBe("mock");
+    expect(paymentMode({ ...mock, NODE_ENV: "development" })).toBe("test-page");
+    // Unset or production NODE_ENV: closed, so a forgotten variable never gives away goods.
+    expect(getPaymentProvider(mock)).toBeNull();
+    expect(getPaymentProvider({ ...mock, NODE_ENV: "production" })).toBeNull();
+    // Running on Railway counts as deployed even in development mode.
+    expect(
+      getPaymentProvider({
+        ...mock,
+        NODE_ENV: "development",
+        RAILWAY_ENVIRONMENT_NAME: "production",
+      }),
+    ).toBeNull();
+    expect(
+      getPaymentProvider({ ...mock, NODE_ENV: "production", ALLOW_MOCK_PAYMENTS: "true" })?.name,
+    ).toBe("mock");
+  });
+
+  it("never allows the pretend provider next to a live Stripe key", () => {
     expect(
       getPaymentProvider({
         PAYMENTS_PROVIDER: "mock",
-        NODE_ENV: "production",
+        NODE_ENV: "development",
         ALLOW_MOCK_PAYMENTS: "true",
-      })?.name,
-    ).toBe("mock");
+        STRIPE_SECRET_KEY: "sk_live_abc",
+        STRIPE_WEBHOOK_SECRET: "whsec_x",
+      }),
+    ).toBeNull();
   });
 });
 

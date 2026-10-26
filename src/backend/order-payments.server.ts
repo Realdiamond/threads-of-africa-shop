@@ -11,13 +11,14 @@ import {
 
 import { recordAudit, type Actor } from "./admin/audit.server";
 import { getDb, type Db, type Executor } from "./db/client.server";
-import { carts, orders, webhookEvents } from "./db/schema";
+import { carts, orderEvents, orders, webhookEvents } from "./db/schema";
 import { queueEmail } from "./email/outbox.server";
 import {
   newOrderAlertEmail,
   orderAttentionEmail,
   orderConfirmationEmail,
   orderRefundedEmail,
+  unmatchedPaymentEmail,
 } from "./email/order-templates.server";
 import { errorFields, log } from "./log.server";
 import {
@@ -95,6 +96,9 @@ export async function handlePaymentEvent(
       case "refunded":
         outcome = await onRefunded(tx, providerName, event, shop);
         break;
+      case "dispute":
+        outcome = await onDispute(tx, providerName, event, shop);
+        break;
     }
     await tx
       .update(webhookEvents)
@@ -113,16 +117,19 @@ async function onPaid(
   if (!isUuid(event.orderId)) return "ignored";
   const [order] = await tx.select().from(orders).where(eq(orders.id, event.orderId)).for("update");
   if (!order) {
-    log("warn", "payment received for an order we do not have", {
-      provider: providerName,
-      eventId: event.eventId,
-    });
+    await alertUnmatchedPayment(tx, shop, providerName, event, "we have no order with that number");
     return "ignored";
   }
+  // A payment only counts for an order that was started with the same payment provider.
+  if (order.paymentProvider !== providerName) return "ignored";
   if (order.providerSessionId && order.providerSessionId !== event.sessionId) {
-    log("warn", "payment received for a different session than the order's", {
-      orderId: order.id,
-    });
+    await alertUnmatchedPayment(
+      tx,
+      shop,
+      providerName,
+      event,
+      `it belongs to a different payment page than order ${formatOrderNumber(order.number)} expects`,
+    );
     return "ignored";
   }
   // Already paid, shipped, refunded...: a repeat of something we have dealt with.
@@ -131,12 +138,12 @@ async function onPaid(
   const matches =
     event.amountCents === order.totalCents && event.currency.toUpperCase() === order.currency;
   if (!matches) {
-    // Never mark an order paid for the wrong amount. Keep it from expiring so a person can sort
-    // it out (cancel it, or refund in the payment dashboard) with the money still traceable.
+    // Never mark an order paid for the wrong amount. Give a person a week to sort it out (refund
+    // in the payment dashboard, or cancel) with the items still held, then let it lapse.
     await tx
       .update(orders)
       .set({
-        expiresAt: null,
+        expiresAt: sql`now() + interval '7 days'`,
         providerPaymentId: event.paymentId,
         providerSessionId: sql`coalesce(${orders.providerSessionId}, ${event.sessionId})`,
         updatedAt: sql`now()`,
@@ -153,7 +160,7 @@ async function onPaid(
       tx,
       shop,
       order.id,
-      "A payment came in for a different amount than the order total, so the order was not marked as paid. Please check it in your payment dashboard.",
+      "A payment came in for a different amount than the order total, so the order was not marked as paid. Please check it in your payment dashboard. The items stay held for 7 days.",
       "order-mismatch",
     );
     return "processed";
@@ -211,7 +218,13 @@ async function onPaid(
       short.length > 0
         ? `This customer paid after the order's hold had expired, and we were short on stock for: ${short.join(", ")}. Please either fulfil it or refund it from the order page.`
         : "This customer paid after the order's hold had expired. The items were still in stock, so the order has been restored.";
-    await addOrderEvent(tx, order.id, "late_payment", note, "system");
+    await addOrderEvent(
+      tx,
+      order.id,
+      short.length > 0 ? "late_payment_short" : "late_payment",
+      note,
+      "system",
+    );
   }
   const alert = newOrderAlertEmail(shop, view, adminLink(order.id), note);
   await queueEmail(tx, {
@@ -263,7 +276,13 @@ async function onRefunded(
     .from(orders)
     .where(eq(orders.providerPaymentId, event.paymentId))
     .for("update");
-  if (!order) return "ignored";
+  if (!order) {
+    log("warn", "refund reported for a payment we have no order for", {
+      provider: providerName,
+      eventId: event.eventId,
+    });
+    return "ignored";
+  }
 
   if (!event.fullyRefunded) {
     await addOrderEvent(
@@ -284,6 +303,63 @@ async function onRefunded(
     shop,
   });
   return "processed";
+}
+
+// A chargeback: the customer asked their bank for the money back. Nothing changes automatically
+// (there is evidence to submit in the payment dashboard), but the shop is told straight away.
+async function onDispute(
+  tx: Executor,
+  providerName: string,
+  event: Extract<PaymentEvent, { kind: "dispute" }>,
+  shop: Shop,
+): Promise<HandleOutcome> {
+  const [order] = await tx
+    .select()
+    .from(orders)
+    .where(eq(orders.providerPaymentId, event.paymentId));
+  if (!order) return "ignored";
+  await addOrderEvent(
+    tx,
+    order.id,
+    "dispute",
+    `The customer disputed the payment with their bank (reason: ${event.reason}). Reply with your evidence in the payment dashboard before the deadline.`,
+    providerName,
+  );
+  await alertShop(
+    tx,
+    shop,
+    order.id,
+    `The customer disputed this payment with their bank (reason: ${event.reason}). Open your payment dashboard and send your evidence before the deadline — and consider holding the parcel if it has not shipped.`,
+    `order-dispute-${event.eventId}`,
+  );
+  return "processed";
+}
+
+// A verified payment we cannot attach to an order. The event is recorded, so the provider will not
+// send it again; this makes sure a person hears about it.
+async function alertUnmatchedPayment(
+  tx: Executor,
+  shop: Shop,
+  providerName: string,
+  event: Extract<PaymentEvent, { kind: "paid" }>,
+  why: string,
+) {
+  log("error", "a verified payment could not be matched to an order", {
+    provider: providerName,
+    eventId: event.eventId,
+    reason: why,
+  });
+  const mail = unmatchedPaymentEmail(shop, {
+    amount: formatCents(event.amountCents, event.currency.toUpperCase()),
+    paymentId: event.paymentId ?? "unknown",
+    why,
+  });
+  await queueEmail(tx, {
+    ...mail,
+    to: shop.contactEmail,
+    kind: "order_attention",
+    dedupeKey: `payment-unmatched:${event.eventId}`,
+  });
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -362,11 +438,29 @@ export async function refundOrder(
     };
   }
 
+  // The owner's request is on record before any money moves.
+  await recordAudit(
+    db,
+    actor,
+    "order_refund_requested",
+    "order",
+    order.id,
+    `Asked for a refund of order ${formatOrderNumber(order.number)} (${formatCents(order.totalCents, order.currency)})`,
+  );
+
+  // The payment provider remembers the result of a request for a day, even a failed one, so a
+  // retry after a failure needs a fresh key. Asking twice cannot refund twice: the provider
+  // refuses to refund a payment that is already refunded.
+  const [{ failed } = { failed: 0 }] = await db
+    .select({ failed: sql<number>`count(*)::int` })
+    .from(orderEvents)
+    .where(and(eq(orderEvents.orderId, order.id), eq(orderEvents.kind, "refund_failed")));
+
   try {
     await provider.refund({
       paymentId: order.providerPaymentId,
       amountCents: order.totalCents,
-      idempotencyKey: `refund-${order.id}`,
+      idempotencyKey: `refund-${order.id}-${failed}`,
       orderId: order.id,
     });
   } catch (error) {
@@ -374,6 +468,13 @@ export async function refundOrder(
       orderId: order.id,
       ...errorFields(error),
     });
+    await addOrderEvent(
+      db,
+      order.id,
+      "refund_failed",
+      "The payment provider could not process a refund request",
+      actor.email,
+    );
     return {
       ok: false,
       code: "PROVIDER_ERROR",
@@ -423,7 +524,7 @@ export async function getMockSession(
 ): Promise<MockSession | null> {
   if (getPaymentProvider()?.name !== "mock") return null;
   const [order] = await db.select().from(orders).where(eq(orders.providerSessionId, sessionId));
-  if (!order) return null;
+  if (!order || order.paymentProvider !== "mock") return null;
   const view = await loadCustomerOrder(db, order.id);
   if (!view) return null;
   return {
@@ -447,7 +548,8 @@ export async function completeMockPayment(
 ): Promise<{ ok: true; redirect: string } | { ok: false }> {
   if (getPaymentProvider()?.name !== "mock") return { ok: false };
   const [order] = await db.select().from(orders).where(eq(orders.providerSessionId, sessionId));
-  if (!order) return { ok: false };
+  // Only orders that were started on the test page can be "paid" on it.
+  if (!order || order.paymentProvider !== "mock") return { ok: false };
 
   const orderUrl = `/orders/${order.id}?t=${order.accessToken}&placed=1`;
   if (outcome === "cancel") {

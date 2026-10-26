@@ -1,3 +1,5 @@
+import { redactQueryParams } from "@/lib/redact";
+
 type Level = "info" | "warn" | "error";
 
 // One JSON object per line so Railway's log search can filter on fields.
@@ -9,6 +11,9 @@ export function log(level: Level, msg: string, fields: Record<string, unknown> =
 
 export function errorFields(error: unknown) {
   return error instanceof Error
-    ? { error: error.message, stack: error.stack }
+    ? {
+        error: redactQueryParams(error.message),
+        ...(error.stack ? { stack: redactQueryParams(error.stack) } : {}),
+      }
     : { error: String(error) };
 }
