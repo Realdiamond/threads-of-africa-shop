@@ -22,6 +22,20 @@
       "when": 1793026142495,
       "tag": "0002_admin_foundation",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1793027270638,
+      "tag": "0003_settings_shipping_pages_forms_email",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1793027454425,
+      "tag": "0004_email_reply_to",
+      "breakpoints": true
     }
   ]
 }

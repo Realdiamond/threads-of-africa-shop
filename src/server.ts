@@ -1,7 +1,11 @@
 import "./lib/error-capture";
 
+import { startBackgroundJobs } from "./backend/jobs.server";
 import { consumeLastCapturedError } from "./lib/error-capture";
 import { renderErrorPage } from "./lib/error-page";
+
+// Sends queued emails and does housekeeping inside this same process.
+startBackgroundJobs();
 
 type ServerEntry = {
   fetch: (request: Request, env: unknown, ctx: unknown) => Promise<Response> | Response;

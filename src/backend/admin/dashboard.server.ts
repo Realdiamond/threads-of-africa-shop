@@ -3,7 +3,7 @@ import { and, asc, eq, sql } from "drizzle-orm";
 import { getDb, type Db } from "../db/client.server";
 import { products, variants } from "../db/schema";
 import { recentAudit, type AuditEntry } from "./audit.server";
-import { LOW_STOCK_THRESHOLD } from "./product-admin.server";
+import { getSettings } from "../settings.server";
 
 export type AdminDashboard = {
   counts: { active: number; draft: number; archived: number };
@@ -19,6 +19,7 @@ export type AdminDashboard = {
 };
 
 export async function adminDashboard(db: Db = getDb()): Promise<AdminDashboard> {
+  const { lowStockThreshold } = await getSettings(db);
   const [statusRows, outOfStockRows, lowStock, recent] = await Promise.all([
     db
       .select({ status: products.status, total: sql<number>`count(*)::int` })
@@ -42,7 +43,7 @@ export async function adminDashboard(db: Db = getDb()): Promise<AdminDashboard> 
       .where(
         and(
           eq(products.status, "active"),
-          sql`${variants.stock} between 1 and ${LOW_STOCK_THRESHOLD}`,
+          sql`${variants.stock} between 1 and ${lowStockThreshold}`,
         ),
       )
       .orderBy(asc(variants.stock), asc(products.title))

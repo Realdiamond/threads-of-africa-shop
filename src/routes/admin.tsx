@@ -16,16 +16,16 @@ export const Route = createFileRoute("/admin")({
   // Every admin page passes through here: no session means the sign-in page, and someone who
   // still has a temporary password can only reach their account page to replace it.
   beforeLoad: async ({ location }) => {
-    const { admin } = await getAdminSessionFn();
+    const { admin, newMessages } = await getAdminSessionFn();
     const path = withoutTrailingSlash(location.pathname);
     if (!admin) {
       if (path !== "/admin/login") throw redirect({ to: "/admin/login" });
-      return { admin: null };
+      return { admin: null, newMessages: 0 };
     }
     if (path === "/admin/login") throw redirect({ to: "/admin" });
     if (admin.status === "invited" && path !== "/admin/account")
       throw redirect({ to: "/admin/account" });
-    return { admin };
+    return { admin, newMessages };
   },
   head: () => ({
     meta: [
@@ -38,10 +38,10 @@ export const Route = createFileRoute("/admin")({
 });
 
 function AdminLayout() {
-  const { admin } = Route.useRouteContext();
+  const { admin, newMessages } = Route.useRouteContext();
   if (!admin) return <Outlet />;
   return (
-    <AdminShell admin={admin}>
+    <AdminShell admin={admin} newMessages={newMessages}>
       <Outlet />
     </AdminShell>
   );

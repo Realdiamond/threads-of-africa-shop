@@ -1,0 +1,64 @@
+import { purgeStrayUploads } from "./admin/media.server";
+import { purgeExpiredSessions } from "./auth/admin-auth.server";
+import { purgeExpiredCarts } from "./cart.server";
+import { processEmailOutbox, purgeOldEmails } from "./email/processor.server";
+import { errorFields, log } from "./log.server";
+
+// Background work that runs inside the web process: one Railway service is enough, with no
+// separate worker to deploy. Each job is guarded against overlapping with itself.
+const OUTBOX_EVERY_MS = 15_000;
+const MAINTENANCE_EVERY_MS = 60 * 60 * 1000;
+
+const running = new Set<string>();
+
+async function once(name: string, run: () => Promise<void>) {
+  if (running.has(name)) return;
+  running.add(name);
+  try {
+    await run();
+  } catch (error) {
+    log("error", `background job "${name}" failed`, errorFields(error));
+  } finally {
+    running.delete(name);
+  }
+}
+
+export async function runMaintenance() {
+  const [carts, sessions, uploads, emails] = await Promise.all([
+    purgeExpiredCarts(),
+    purgeExpiredSessions().then(() => 0),
+    purgeStrayUploads(),
+    purgeOldEmails(),
+  ]);
+  if (carts + uploads + emails > 0) {
+    log("info", "maintenance finished", {
+      expiredCarts: carts,
+      strayUploads: uploads,
+      oldEmails: emails,
+      sessions,
+    });
+  }
+}
+
+const globals = globalThis as { __toaJobsStarted?: boolean };
+
+export function startBackgroundJobs() {
+  if (globals.__toaJobsStarted) return;
+  if (process.env["DISABLE_JOBS"] === "true" || process.env["VITEST"]) return;
+  globals.__toaJobsStarted = true;
+
+  const outbox = setInterval(
+    () => void once("email-outbox", async () => void (await processEmailOutbox())),
+    OUTBOX_EVERY_MS,
+  );
+  const maintenance = setInterval(
+    () => void once("maintenance", runMaintenance),
+    MAINTENANCE_EVERY_MS,
+  );
+  const first = setTimeout(() => void once("maintenance", runMaintenance), 60_000);
+  // Never keep the process alive just for these.
+  outbox.unref();
+  maintenance.unref();
+  first.unref();
+  log("info", "background jobs started");
+}

@@ -32,7 +32,12 @@ import {
 import { getDb } from "./db/client.server";
 import { guarded } from "./guarded.server";
 import { log } from "./log.server";
+import { countNewMessages, deleteMessage, listMessages, setMessageStatus } from "./messages.server";
+import { listSubscribers, removeSubscriber } from "./newsletter.server";
+import { listSitePages, resetSitePage, reviewSitePage, saveSitePage } from "./pages.server";
 import { tooManyRequests, withinRateLimit } from "./rate-limit.server";
+import { confirmShipping, getSettings, updateSettings } from "./settings.server";
+import { deleteShippingZone, listShippingZones, saveShippingZone } from "./shipping.server";
 
 const FIFTEEN_MINUTES = 15 * 60 * 1000;
 
@@ -94,7 +99,12 @@ const productInput = z.object({
 // ---- Sign in / out -------------------------------------------------------------------------
 
 export const getAdminSessionFn = createServerFn({ method: "POST" }).handler(() =>
-  guarded("getAdminSession", async () => ({ admin: await currentAdmin() })),
+  guarded("getAdminSession", async () => {
+    const admin = await currentAdmin();
+    // The unread-message badge in the menu rides along, saving the screens a second request.
+    const newMessages = admin && admin.status === "active" ? await countNewMessages() : 0;
+    return { admin, newMessages };
+  }),
 );
 
 export const adminLoginFn = createServerFn({ method: "POST" })
@@ -280,4 +290,139 @@ export const adminResetPasswordFn = createServerFn({ method: "POST" })
   .validator(z.object({ userId: id }))
   .handler(({ data, context }) =>
     guarded("adminResetPassword", () => resetAdminPassword(context.admin, data.userId)),
+  );
+
+// ---- Shop settings, shipping and policy pages (owners only) ---------------------------------
+
+const settingsInput = z.object({
+  storeName: z.string().max(100),
+  contactEmail: z.string().max(300),
+  whatsappNumber: z.string().max(40),
+  instagramUrl: z.string().max(300),
+  tiktokUrl: z.string().max(300),
+  facebookUrl: z.string().max(300),
+  pinterestUrl: z.string().max(300),
+  announcement: z.string().max(300),
+  lowStockThreshold: z.number().int().min(0).max(1000),
+});
+
+export const adminGetSettingsFn = createServerFn({ method: "POST" })
+  .middleware([ownerOnly])
+  .handler(() => guarded("adminGetSettings", () => getSettings()));
+
+export const adminUpdateSettingsFn = createServerFn({ method: "POST" })
+  .middleware([ownerOnly])
+  .validator(settingsInput)
+  .handler(({ data, context }) =>
+    guarded("adminUpdateSettings", () => updateSettings(context.admin, data)),
+  );
+
+const zoneInput = z.object({
+  id: id.optional(),
+  name: z.string().max(100),
+  restOfWorld: z.boolean(),
+  taxBps: z.number().int().min(0).max(5000),
+  countries: z.array(z.string().length(2)).max(250),
+  rates: z
+    .array(
+      z.object({
+        name: z.string().max(100),
+        priceCents: z.number().int().min(0).max(1_000_000),
+        freeOverCents: z.number().int().positive().nullable(),
+        estimate: z.string().max(100),
+      }),
+    )
+    .max(10),
+});
+
+export const adminListShippingFn = createServerFn({ method: "POST" })
+  .middleware([ownerOnly])
+  .handler(() =>
+    guarded("adminListShipping", async () => ({
+      zones: await listShippingZones(),
+      confirmedAt: (await getSettings()).shippingConfirmedAt,
+    })),
+  );
+
+export const adminSaveShippingZoneFn = createServerFn({ method: "POST" })
+  .middleware([ownerOnly])
+  .validator(zoneInput)
+  .handler(({ data, context }) =>
+    guarded("adminSaveShippingZone", () => saveShippingZone(context.admin, data)),
+  );
+
+export const adminDeleteShippingZoneFn = createServerFn({ method: "POST" })
+  .middleware([ownerOnly])
+  .validator(z.object({ zoneId: id }))
+  .handler(({ data, context }) =>
+    guarded("adminDeleteShippingZone", () => deleteShippingZone(context.admin, data.zoneId)),
+  );
+
+export const adminConfirmShippingFn = createServerFn({ method: "POST" })
+  .middleware([ownerOnly])
+  .handler(({ context }) => guarded("adminConfirmShipping", () => confirmShipping(context.admin)));
+
+const pageSlug = z.string().max(40);
+
+export const adminListPagesFn = createServerFn({ method: "POST" })
+  .middleware([ownerOnly])
+  .handler(() => guarded("adminListPages", () => listSitePages()));
+
+export const adminSavePageFn = createServerFn({ method: "POST" })
+  .middleware([ownerOnly])
+  .validator(z.object({ slug: pageSlug, title: z.string().max(200), body: z.string().max(60_000) }))
+  .handler(({ data, context }) =>
+    guarded("adminSavePage", () => saveSitePage(context.admin, data)),
+  );
+
+export const adminReviewPageFn = createServerFn({ method: "POST" })
+  .middleware([ownerOnly])
+  .validator(z.object({ slug: pageSlug }))
+  .handler(({ data, context }) =>
+    guarded("adminReviewPage", () => reviewSitePage(context.admin, data.slug)),
+  );
+
+export const adminResetPageFn = createServerFn({ method: "POST" })
+  .middleware([ownerOnly])
+  .validator(z.object({ slug: pageSlug }))
+  .handler(({ data, context }) =>
+    guarded("adminResetPage", () => resetSitePage(context.admin, data.slug)),
+  );
+
+// ---- Messages and subscribers --------------------------------------------------------------
+
+export const adminListMessagesFn = createServerFn({ method: "POST" })
+  .middleware([activeAdmin])
+  .validator(z.object({ status: z.enum(["new", "handled"]).optional() }))
+  .handler(({ data }) => guarded("adminListMessages", () => listMessages(data)));
+
+export const adminSetMessageStatusFn = createServerFn({ method: "POST" })
+  .middleware([activeAdmin])
+  .validator(z.object({ id, status: z.enum(["new", "handled"]) }))
+  .handler(({ data, context }) =>
+    guarded("adminSetMessageStatus", () => setMessageStatus(context.admin, data.id, data.status)),
+  );
+
+export const adminDeleteMessageFn = createServerFn({ method: "POST" })
+  .middleware([activeAdmin])
+  .validator(z.object({ id }))
+  .handler(({ data, context }) =>
+    guarded("adminDeleteMessage", () => deleteMessage(context.admin, data.id)),
+  );
+
+export const adminListSubscribersFn = createServerFn({ method: "POST" })
+  .middleware([activeAdmin])
+  .validator(
+    z.object({
+      status: z.enum(["subscribed", "unsubscribed"]).optional(),
+      search: z.string().max(100).optional(),
+    }),
+  )
+  .handler(({ data }) => guarded("adminListSubscribers", () => listSubscribers(data)));
+
+export const adminRemoveSubscriberFn = createServerFn({ method: "POST" })
+  .middleware([ownerOnly])
+  .validator(z.object({ id }))
+  .handler(({ data, context }) =>
+    guarded("adminRemoveSubscriber", () => removeSubscriber(context.admin, data.id)),
   );

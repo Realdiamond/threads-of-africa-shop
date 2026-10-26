@@ -9,19 +9,38 @@ import { adminCall, StatusBadge } from "./admin-ui";
 
 type Admin = { name: string; email: string; role: "owner" | "staff" };
 
-type NavItem = { to: string; label: string; ownerOnly?: boolean; exact?: boolean };
+type NavItem = {
+  to: string;
+  label: string;
+  ownerOnly?: boolean;
+  exact?: boolean;
+  badge?: "messages";
+};
 
 const NAV: NavItem[] = [
   { to: "/admin", label: "Dashboard", exact: true },
   { to: "/admin/products", label: "Products" },
   { to: "/admin/categories", label: "Categories" },
   { to: "/admin/orders", label: "Orders" },
+  { to: "/admin/messages", label: "Messages", badge: "messages" },
+  { to: "/admin/subscribers", label: "Subscribers" },
+  { to: "/admin/shipping", label: "Shipping & tax", ownerOnly: true },
+  { to: "/admin/pages", label: "Policy pages", ownerOnly: true },
+  { to: "/admin/settings", label: "Settings", ownerOnly: true },
   { to: "/admin/activity", label: "Activity" },
   { to: "/admin/team", label: "Team", ownerOnly: true },
   { to: "/admin/account", label: "My account" },
 ];
 
-export function AdminShell({ admin, children }: { admin: Admin; children: ReactNode }) {
+export function AdminShell({
+  admin,
+  newMessages = 0,
+  children,
+}: {
+  admin: Admin;
+  newMessages?: number;
+  children: ReactNode;
+}) {
   const [signingOut, setSigningOut] = useState(false);
 
   async function signOut() {
@@ -71,6 +90,14 @@ export function AdminShell({ admin, children }: { admin: Admin; children: ReactN
               activeProps={{ className: "bg-secondary text-foreground font-medium" }}
             >
               {item.label}
+              {item.badge === "messages" && newMessages > 0 && (
+                <span
+                  className="ml-2 rounded-full bg-primary px-1.5 py-0.5 text-[10px] text-primary-foreground"
+                  aria-label={`${newMessages} new`}
+                >
+                  {newMessages}
+                </span>
+              )}
             </Link>
           ))}
         </nav>

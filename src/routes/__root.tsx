@@ -12,8 +12,11 @@ import {
 import type { ReactNode } from "react";
 
 import appCss from "../styles.css?url";
+import { getPublicSettingsFn } from "@/backend/site.functions";
 import { StoreProvider } from "@/components/store-context";
 import { StoreHeader, StoreFooter } from "@/components/store-shell";
+import { WhatsAppButton } from "@/components/whatsapp-button";
+import { FALLBACK_SETTINGS } from "@/lib/store-types";
 
 function NotFoundComponent() {
   return (
@@ -73,6 +76,15 @@ function ErrorComponent({ error, reset }: ErrorComponentProps) {
 }
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
+  // Shop details (announcement, contact, social links) come from the admin settings. If they
+  // cannot be loaded, the pages still render with the built-in defaults.
+  loader: async () => {
+    try {
+      return { settings: await getPublicSettingsFn() };
+    } catch {
+      return { settings: FALLBACK_SETTINGS };
+    }
+  },
   head: () => ({
     meta: [
       { charSet: "utf-8" },
@@ -123,6 +135,7 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  const { settings } = Route.useLoaderData();
   const pathname = useRouterState({ select: (state) => state.location.pathname });
   // The admin area has its own layout; the shop's header and footer would get in the way.
   const isAdmin = pathname === "/admin" || pathname.startsWith("/admin/");
@@ -131,9 +144,16 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       <StoreProvider>
-        {!isAdmin && <StoreHeader />}
+        {!isAdmin && <StoreHeader announcement={settings.announcement} />}
         <Outlet />
-        {!isAdmin && <StoreFooter />}
+        {!isAdmin && <StoreFooter settings={settings} />}
+        {!isAdmin && settings.whatsappNumber && (
+          <>
+            {/* Room below the footer so the floating button never covers its links. */}
+            <div className="h-16" aria-hidden="true" />
+            <WhatsAppButton number={settings.whatsappNumber} storeName={settings.storeName} />
+          </>
+        )}
       </StoreProvider>
     </QueryClientProvider>
   );

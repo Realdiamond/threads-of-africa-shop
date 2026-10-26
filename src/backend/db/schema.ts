@@ -4,12 +4,15 @@ import {
   customType,
   index,
   integer,
+  boolean,
   jsonb,
   pgEnum,
   pgTable,
+  smallint,
   text,
   timestamp,
   unique,
+  uniqueIndex,
   uuid,
 } from "drizzle-orm/pg-core";
 
@@ -280,5 +283,200 @@ export const auditLog = pgTable(
   (t) => [
     index("audit_log_created_idx").on(t.createdAt),
     index("audit_log_entity_idx").on(t.entity, t.entityId),
+  ],
+);
+
+const httpsOrEmpty = (column: SQL) => sql`(${column} = '' or ${column} ~ '^https://[^ ]+$')`;
+
+// One row, always id = 1: shop-wide details the owner edits in the admin.
+export const storeSettings = pgTable(
+  "store_settings",
+  {
+    id: smallint("id").primaryKey().default(1),
+    storeName: text("store_name").notNull().default("The Threads of Africa"),
+    // Shown on the site, and where contact-form messages and new-order alerts are sent.
+    contactEmail: text("contact_email").notNull().default("info@thethreadsofafrica.com"),
+    // Digits only, with country code and no "+" (e.g. 2348012345678). Empty hides the WhatsApp button.
+    whatsappNumber: text("whatsapp_number").notNull().default(""),
+    instagramUrl: text("instagram_url").notNull().default(""),
+    tiktokUrl: text("tiktok_url").notNull().default(""),
+    facebookUrl: text("facebook_url").notNull().default(""),
+    pinterestUrl: text("pinterest_url").notNull().default(""),
+    announcement: text("announcement")
+      .notNull()
+      .default("Welcome to The Threads of Africa — Every Thread Tells a Story."),
+    lowStockThreshold: integer("low_stock_threshold").notNull().default(3),
+    // Set when an owner confirms the shipping and tax setup is real; editing it clears this again.
+    shippingConfirmedAt: timestamp("shipping_confirmed_at", { withTimezone: true }),
+    updatedAt: updatedAt(),
+  },
+  (t) => [
+    check("store_settings_single_row", sql`${t.id} = 1`),
+    check("store_settings_email_has_at", sql`position('@' in ${t.contactEmail}) > 1`),
+    check("store_settings_whatsapp_digits", sql`${t.whatsappNumber} ~ '^([0-9]{6,15})?$'`),
+    check("store_settings_low_stock_range", sql`${t.lowStockThreshold} between 0 and 1000`),
+    check("store_settings_instagram_https", httpsOrEmpty(sql`${t.instagramUrl}`)),
+    check("store_settings_tiktok_https", httpsOrEmpty(sql`${t.tiktokUrl}`)),
+    check("store_settings_facebook_https", httpsOrEmpty(sql`${t.facebookUrl}`)),
+    check("store_settings_pinterest_https", httpsOrEmpty(sql`${t.pinterestUrl}`)),
+  ],
+);
+
+export const shippingZones = pgTable(
+  "shipping_zones",
+  {
+    id: id(),
+    name: text("name").notNull().unique(),
+    // The zone that applies to every country not listed in another zone. At most one.
+    restOfWorld: boolean("rest_of_world").notNull().default(false),
+    // Tax as basis points of the items total: 750 = 7.5%.
+    taxBps: integer("tax_bps").notNull().default(0),
+    sortOrder: integer("sort_order").notNull().default(0),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [
+    check("shipping_zones_name_not_blank", sql`length(btrim(${t.name})) > 0`),
+    check("shipping_zones_tax_range", sql`${t.taxBps} between 0 and 5000`),
+    uniqueIndex("shipping_zones_one_rest_of_world")
+      .on(t.restOfWorld)
+      .where(sql`${t.restOfWorld}`),
+  ],
+);
+
+// The primary key makes a country belong to at most one zone.
+export const shippingZoneCountries = pgTable(
+  "shipping_zone_countries",
+  {
+    countryCode: text("country_code").primaryKey(),
+    zoneId: uuid("zone_id")
+      .notNull()
+      .references(() => shippingZones.id, { onDelete: "cascade" }),
+  },
+  (t) => [
+    check("shipping_zone_countries_code_format", sql`${t.countryCode} ~ '^[A-Z]{2}$'`),
+    index("shipping_zone_countries_zone_idx").on(t.zoneId),
+  ],
+);
+
+export const shippingRates = pgTable(
+  "shipping_rates",
+  {
+    id: id(),
+    zoneId: uuid("zone_id")
+      .notNull()
+      .references(() => shippingZones.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    priceCents: integer("price_cents").notNull(),
+    // Orders with items worth at least this much ship free; NULL means never free.
+    freeOverCents: integer("free_over_cents"),
+    estimate: text("estimate").notNull().default(""),
+    sortOrder: integer("sort_order").notNull().default(0),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [
+    check("shipping_rates_name_not_blank", sql`length(btrim(${t.name})) > 0`),
+    check("shipping_rates_price_non_negative", sql`${t.priceCents} >= 0`),
+    check(
+      "shipping_rates_free_over_positive",
+      sql`${t.freeOverCents} is null or ${t.freeOverCents} > 0`,
+    ),
+    index("shipping_rates_zone_idx").on(t.zoneId, t.sortOrder),
+  ],
+);
+
+// Policy pages (privacy, terms, shipping, returns). A missing row means "use the starter text".
+export const sitePages = pgTable(
+  "site_pages",
+  {
+    slug: text("slug").primaryKey(),
+    title: text("title").notNull(),
+    body: text("body").notNull(),
+    // Set when an owner confirms the text has been reviewed; editing it clears this again.
+    reviewedAt: timestamp("reviewed_at", { withTimezone: true }),
+    updatedBy: text("updated_by").notNull().default(""),
+    updatedAt: updatedAt(),
+  },
+  (t) => [
+    check("site_pages_slug_format", sql`${t.slug} ~ '^[a-z0-9]+(-[a-z0-9]+)*$'`),
+    check("site_pages_title_not_blank", sql`length(btrim(${t.title})) > 0`),
+    check("site_pages_body_not_blank", sql`length(btrim(${t.body})) > 0`),
+  ],
+);
+
+export const messageStatus = pgEnum("message_status", ["new", "handled"]);
+
+export const messages = pgTable(
+  "messages",
+  {
+    id: id(),
+    topic: text("topic").notNull(),
+    name: text("name").notNull(),
+    email: text("email").notNull(),
+    body: text("body").notNull(),
+    status: messageStatus("status").notNull().default("new"),
+    createdAt: createdAt(),
+    handledAt: timestamp("handled_at", { withTimezone: true }),
+  },
+  (t) => [
+    check(
+      "messages_topic_allowed",
+      sql`${t.topic} in ('general', 'order', 'wholesale', 'collaboration', 'press')`,
+    ),
+    check("messages_name_range", sql`length(btrim(${t.name})) between 1 and 100`),
+    check("messages_email_has_at", sql`position('@' in ${t.email}) > 1`),
+    check("messages_body_range", sql`length(btrim(${t.body})) between 1 and 5000`),
+    index("messages_status_created_idx").on(t.status, t.createdAt),
+  ],
+);
+
+export const subscriberStatus = pgEnum("subscriber_status", ["subscribed", "unsubscribed"]);
+
+export const newsletterSubscribers = pgTable(
+  "newsletter_subscribers",
+  {
+    id: id(),
+    email: text("email").notNull().unique(),
+    status: subscriberStatus("status").notNull().default("subscribed"),
+    // Random secret in each email's unsubscribe link.
+    token: text("token").notNull().unique(),
+    source: text("source").notNull().default(""),
+    subscribedAt: timestamp("subscribed_at", { withTimezone: true }).notNull().defaultNow(),
+    unsubscribedAt: timestamp("unsubscribed_at", { withTimezone: true }),
+  },
+  (t) => [
+    check("newsletter_email_normalised", sql`${t.email} = lower(btrim(${t.email}))`),
+    check("newsletter_email_has_at", sql`position('@' in ${t.email}) > 1`),
+  ],
+);
+
+export const emailStatus = pgEnum("email_status", ["pending", "sent", "failed"]);
+
+// Every email is written here first and sent by a background job, so a mail-service outage never
+// loses a message or fails the request that caused it.
+export const emailOutbox = pgTable(
+  "email_outbox",
+  {
+    id: id(),
+    toEmail: text("to_email").notNull(),
+    // Set on notifications about a customer's message, so "reply" goes straight to them.
+    replyTo: text("reply_to"),
+    subject: text("subject").notNull(),
+    textBody: text("text_body").notNull(),
+    htmlBody: text("html_body").notNull(),
+    kind: text("kind").notNull(),
+    status: emailStatus("status").notNull().default("pending"),
+    attempts: integer("attempts").notNull().default(0),
+    nextAttemptAt: timestamp("next_attempt_at", { withTimezone: true }).notNull().defaultNow(),
+    lastError: text("last_error").notNull().default(""),
+    // Queuing the same key twice is a no-op, so a retried request cannot send a duplicate.
+    dedupeKey: text("dedupe_key").unique(),
+    createdAt: createdAt(),
+    sentAt: timestamp("sent_at", { withTimezone: true }),
+  },
+  (t) => [
+    check("email_outbox_to_has_at", sql`position('@' in ${t.toEmail}) > 1`),
+    index("email_outbox_due_idx").on(t.status, t.nextAttemptAt),
   ],
 );
