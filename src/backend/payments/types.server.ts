@@ -64,6 +64,9 @@ export class WebhookSignatureError extends Error {
 
 export type PaymentProvider = {
   name: "stripe" | "mock";
+  // True when Stripe is reached through the separate payments gateway service, which also delivers
+  // the events (to /api/payments/events) instead of Stripe calling /api/stripe/webhook.
+  viaGateway?: boolean;
   createCheckoutSession(input: CheckoutSessionInput): Promise<{ sessionId: string; url: string }>;
   // "not_open" means the session already ended or was paid; the caller must wait for its event.
   expireSession(sessionId: string): Promise<"expired" | "not_open">;

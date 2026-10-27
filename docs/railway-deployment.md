@@ -227,6 +227,15 @@ Without this, receipts, shipping emails, contact-form messages and account email
 
 ---
 
+### 8b. Alternative: Stripe through the separate gateway service
+
+If Stripe is handled by the ASP.NET gateway (repo `threads-of-africa-shop-stripe`), the shop holds **no Stripe keys** and Stripe talks to the gateway, not the shop. Use this **instead of** step 8's `STRIPE_*` variables:
+
+1. Deploy the gateway as a second Railway service and set its variables (see that repo's README), including `Gateway__SiteUrl` = this shop's `SITE_URL`, `Gateway__ShopEventsUrl` = `https://<SITE_URL host>/api/payments/events`, and a long random `Gateway__ShopEventsSecret`.
+2. The Stripe webhook endpoint points at the **gateway** (`https://<gateway>/api/stripe/webhook`, same six events as step 8), not at the shop.
+3. In the shop's Variables set `PAYMENTS_GATEWAY_URL` (https, or `http://<service>.railway.internal:<port>`), `PAYMENTS_GATEWAY_API_KEY` (= the gateway's `Gateway__ApiKey`), `PAYMENTS_GATEWAY_EVENTS_SECRET` (= `Gateway__ShopEventsSecret`) and `PAYMENTS_GATEWAY_MODE` (`test`, later `live`). Do not set `STRIPE_SECRET_KEY` / `STRIPE_WEBHOOK_SECRET`.
+4. Run the same test order as step 8. In gateway mode the shop's own `/api/stripe/webhook` answers 404 and `/api/payments/events` is the receiver.
+
 ## 9. Final checks before telling anyone the shop is open
 
 - [ ] `https://<domain>/healthz` → `{"status":"ok"}`; `www` and `http` redirect to the bare `https` address.

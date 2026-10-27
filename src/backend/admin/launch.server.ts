@@ -27,7 +27,7 @@ const paymentItem = (mode: PaymentMode): ChecklistItem => {
         label: "Taking payments",
         status: "warning",
         detail:
-          "Stripe is connected in TEST mode: nobody can pay with a real card. When you are ready, replace STRIPE_SECRET_KEY and STRIPE_WEBHOOK_SECRET in Railway with the live ones.",
+          "Stripe is connected in TEST mode: nobody can pay with a real card. When you are ready, switch to the live Stripe keys (STRIPE_SECRET_KEY and STRIPE_WEBHOOK_SECRET in Railway, or on the payments gateway together with PAYMENTS_GATEWAY_MODE=live).",
       };
     case "test-page":
       return {
@@ -43,7 +43,7 @@ const paymentItem = (mode: PaymentMode): ChecklistItem => {
         label: "Taking payments",
         status: "todo",
         detail:
-          "Checkout is closed. Add STRIPE_SECRET_KEY and STRIPE_WEBHOOK_SECRET in Railway (see the README for the webhook address).",
+          "Checkout is closed. Add STRIPE_SECRET_KEY and STRIPE_WEBHOOK_SECRET in Railway (or the PAYMENTS_GATEWAY_* variables; see the README for the addresses).",
       };
   }
 };

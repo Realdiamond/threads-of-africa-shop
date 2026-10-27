@@ -1,6 +1,7 @@
 import Stripe from "stripe";
 
 import { log } from "./log.server";
+import { createGatewayProvider } from "./payments/gateway.server";
 import { createMockProvider } from "./payments/mock.server";
 import { createStripeProvider } from "./payments/stripe.server";
 import type { PaymentProvider } from "./payments/types.server";
@@ -13,8 +14,10 @@ type Env = Record<string, string | undefined>;
 // Which payment provider the shop uses, decided purely by environment variables:
 //   PAYMENTS_PROVIDER=mock                  a fake "pay" page for testing (development only,
 //                                           or ALLOW_MOCK_PAYMENTS=true on a staging copy)
-//   STRIPE_SECRET_KEY + STRIPE_WEBHOOK_SECRET   real Stripe payments
-// With neither, checkout stays closed. A Stripe key without its webhook secret also keeps checkout
+//   STRIPE_SECRET_KEY + STRIPE_WEBHOOK_SECRET   real Stripe payments, shop talks to Stripe itself
+//   PAYMENTS_GATEWAY_URL + _API_KEY + _EVENTS_SECRET + _MODE   real Stripe payments through the
+//                                           separate Stripe gateway service (which holds the keys)
+// With none of these, checkout stays closed. A Stripe key without its webhook secret also keeps checkout
 // closed, because orders are only ever confirmed from the verified webhook; taking money we
 // could never confirm would be worse than not opening.
 let cached: { key: string; provider: PaymentProvider } | undefined;
@@ -31,10 +34,51 @@ function warnOnce(message: string) {
 // on purpose (for a staging copy). It is never allowed alongside a live Stripe key.
 function mockAllowed(env: Env): boolean {
   if (env["STRIPE_SECRET_KEY"]?.includes("_live_")) return false;
+  if (env["PAYMENTS_GATEWAY_MODE"]?.trim() === "live") return false;
   if (env["ALLOW_MOCK_PAYMENTS"] === "true") return true;
   const mode = env["NODE_ENV"];
   const deployed = Boolean(env["RAILWAY_ENVIRONMENT_NAME"] || env["RAILWAY_PUBLIC_DOMAIN"]);
   return (mode === "development" || mode === "test") && !deployed;
+}
+
+// The gateway is only trusted over https (or plain http to this machine / Railway's private
+// network), because the API key and customers' order details travel to it.
+function gatewayUrlAllowed(raw: string): boolean {
+  let url: URL;
+  try {
+    url = new URL(raw);
+  } catch {
+    return false;
+  }
+  if (url.protocol === "https:") return true;
+  return (
+    url.protocol === "http:" &&
+    (url.hostname === "localhost" ||
+      url.hostname === "127.0.0.1" ||
+      url.hostname.endsWith(".railway.internal"))
+  );
+}
+
+function getGatewayProvider(env: Env): PaymentProvider | null {
+  const baseUrl = env["PAYMENTS_GATEWAY_URL"]?.trim() ?? "";
+  const apiKey = env["PAYMENTS_GATEWAY_API_KEY"]?.trim();
+  const eventsSecret = env["PAYMENTS_GATEWAY_EVENTS_SECRET"]?.trim();
+  const mode = env["PAYMENTS_GATEWAY_MODE"]?.trim();
+  if (!gatewayUrlAllowed(baseUrl)) {
+    warnOnce("PAYMENTS_GATEWAY_URL must be an https address; checkout stays closed");
+    return null;
+  }
+  if (!apiKey || !eventsSecret || (mode !== "test" && mode !== "live")) {
+    warnOnce(
+      "PAYMENTS_GATEWAY_API_KEY, PAYMENTS_GATEWAY_EVENTS_SECRET and PAYMENTS_GATEWAY_MODE (test or live) are all required; checkout stays closed",
+    );
+    return null;
+  }
+  const key = `gateway:${baseUrl}:${apiKey}:${eventsSecret}`;
+  if (cached?.key !== key) {
+    cached = { key, provider: createGatewayProvider({ baseUrl, apiKey, eventsSecret }) };
+  }
+  return cached.provider;
 }
 
 export function getPaymentProvider(env: Env = process.env): PaymentProvider | null {
@@ -48,6 +92,8 @@ export function getPaymentProvider(env: Env = process.env): PaymentProvider | nu
     if (cached?.key !== "mock") cached = { key: "mock", provider: createMockProvider() };
     return cached.provider;
   }
+
+  if (env["PAYMENTS_GATEWAY_URL"]?.trim()) return getGatewayProvider(env);
 
   const secretKey = env["STRIPE_SECRET_KEY"]?.trim();
   if (!secretKey) return null;
@@ -82,5 +128,9 @@ export function paymentMode(env: Env = process.env): PaymentMode {
   const provider = getPaymentProvider(env);
   if (!provider) return "off";
   if (provider.name === "mock") return "test-page";
+  // Through the gateway the shop never sees the Stripe key, so the owner states the mode.
+  if (provider.viaGateway) {
+    return env["PAYMENTS_GATEWAY_MODE"]?.trim() === "live" ? "stripe-live" : "stripe-test";
+  }
   return env["STRIPE_SECRET_KEY"]?.includes("_live_") ? "stripe-live" : "stripe-test";
 }
