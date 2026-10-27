@@ -1,5 +1,7 @@
 # Launch guide
 
+> Hosting step by step (Railway, domain, Stripe, email) is in **[railway-deployment.md](railway-deployment.md)**. This page is the shorter checklist version and the things only a person can decide.
+
 Everything needed to take the shop from "deployed" to "taking real orders". Work through it in order; the **launch checklist on the admin dashboard** shows what is still open at any time.
 
 You need accounts at: **Railway** (hosting), **Stripe** (payments), **Resend** (email), and wherever the domain is registered.
@@ -11,8 +13,9 @@ You need accounts at: **Railway** (hosting), **Stripe** (payments), **Resend** (
    - `DATABASE_URL` → "Add reference" to the Postgres service's `DATABASE_URL`.
    - `SITE_URL` → the final address, e.g. `https://thethreadsofafrica.com` (no trailing slash). Until the domain is connected, use the `*.up.railway.app` address Railway gives you.
 3. Deploy. The build runs `bun run build`; the service starts with `bun run start`, which applies database migrations and then launches the server. Railway checks `/healthz` (healthy = the app can reach the database).
-4. Open a shell on the service (`railway run …` from your laptop, or Railway's shell) and run, **once**:
+4. From a computer with the repo and Bun, using the Postgres service's **public** address (`DATABASE_PUBLIC_URL`; the private `DATABASE_URL` does not connect from outside Railway), run, **once**:
    ```sh
+   export DATABASE_URL='<the public url>'
    bun run db:seed            # the starter products and categories
    bun run admin:create -- --email owner@yourdomain.com --name "Owner Name" --role owner
    ```

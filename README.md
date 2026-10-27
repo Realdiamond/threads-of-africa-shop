@@ -7,7 +7,7 @@ The online shop for The Threads of Africa: catalog, bag, checkout with Stripe, c
 | You are… | Start here |
 | --- | --- |
 | **The owner** (running the shop day to day) | [Admin guide](docs/admin-guide.md) |
-| **DevOps / deploying it** | [Launch guide](docs/launch-guide.md) |
+| **DevOps / hosting it on Railway** | [Railway deployment guide](docs/railway-deployment.md), then the [launch guide](docs/launch-guide.md) |
 | **Something is wrong in production** | [Operations runbook](docs/operations.md) |
 | **A developer** | the rest of this page, and [`AGENTS.md`](AGENTS.md) |
 
@@ -73,8 +73,8 @@ Railway sets `PORT` and `NODE_ENV` for you; `bun run start` sets `NODE_ENV=produ
 1. Create a Railway project from this repo and add a **Postgres** service.
 2. On the web service add `DATABASE_URL` (reference to the Postgres service) and `SITE_URL`.
 3. Deploy. `railway.json` builds with `bun run build`, starts with `bun run start` (applies migrations, then launches the server) and health-checks `/healthz`.
-4. First deploy only: `railway run bun run db:seed` (starter products) and `railway run bun run admin:create -- --email … --name … --role owner`.
-5. Attach the custom domain in Networking, then follow the **[launch guide](docs/launch-guide.md)** for Stripe, email and the final checks.
+4. First deploy only, from a computer with the repo and Bun, using the database's **public** URL (`DATABASE_PUBLIC_URL` on the Postgres service — the private `DATABASE_URL` does not connect from outside Railway): `DATABASE_URL='<public url>' bun run db:seed` and `DATABASE_URL='<public url>' bun run admin:create -- --email … --name … --role owner`.
+5. Attach the custom domain in Networking. The full click-by-click version of all of this, including Stripe, email and the final checks, is the **[Railway deployment guide](docs/railway-deployment.md)**.
 
 ## How the pieces fit
 
