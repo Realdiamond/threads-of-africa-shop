@@ -149,16 +149,15 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       <StoreProvider>
-        {!isAdmin && <StoreHeader announcement={settings.announcement} />}
-        <Outlet />
-        {!isAdmin && <StoreFooter settings={settings} />}
-        {!isAdmin && settings.whatsappNumber && (
-          <>
-            {/* Room below the footer so the floating button never covers its links. */}
-            <div className="h-16" aria-hidden="true" />
+        {/* "storefront" switches on the shop's serif headings; the admin keeps its plain look. */}
+        <div className={isAdmin ? undefined : "storefront"}>
+          {!isAdmin && <StoreHeader announcement={settings.announcement} />}
+          <Outlet />
+          {!isAdmin && <StoreFooter settings={settings} />}
+          {!isAdmin && settings.whatsappNumber && (
             <WhatsAppButton number={settings.whatsappNumber} storeName={settings.storeName} />
-          </>
-        )}
+          )}
+        </div>
       </StoreProvider>
     </QueryClientProvider>
   );

@@ -1,7 +1,6 @@
 import { Link, useNavigate } from "@tanstack/react-router";
-import logoUrl from "@/assets/threads-of-africa-logo.png";
 import emblemUrl from "@/assets/threads-of-africa-emblem.png";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Search,
   ShoppingBag,
@@ -12,11 +11,7 @@ import {
   Plus,
   Minus,
   Trash2,
-  Instagram,
-  Globe,
-  Leaf,
-  PackageCheck,
-  Scissors,
+  Lock,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTitle, SheetDescription } from "@/components/ui/sheet";
@@ -27,9 +22,10 @@ import { useQuery } from "@tanstack/react-query";
 import { money, productsQueryOptions } from "@/lib/catalog";
 import { ProductCard } from "./product-card";
 import type { PublicSettings } from "@/lib/store-types";
-export function Brand() {
+
+export function Brand({ className = "" }: { className?: string }) {
   return (
-    <span className="brand">
+    <span className={`brand ${className}`}>
       <img src={emblemUrl} alt="" className="brand-mark" />
       <span className="brand-text">
         <span className="brand-the">THE</span> THREADS <span className="brand-of">OF AFRICA</span>
@@ -37,6 +33,14 @@ export function Brand() {
     </span>
   );
 }
+
+const SHOP_LINKS = [
+  { label: "Shop all", category: "All" },
+  { label: "Women", category: "Women" },
+  { label: "Men", category: "Men" },
+  { label: "New in", category: "New" },
+] as const;
+
 export function StoreHeader({ announcement }: { announcement: string }) {
   const store = useStore();
   const cart = useCartStore();
@@ -44,16 +48,31 @@ export function StoreHeader({ announcement }: { announcement: string }) {
   const [search, setSearch] = useState(false);
   const [term, setTerm] = useState("");
   const [saved, setSaved] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
   const navigate = useNavigate();
+
+  // The header stays put while scrolling; a hairline and soft shadow appear once the page moves.
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 8);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
   const checkout = () => {
     if (!cart.cartId) return;
     cart.setBagOpen(false);
     void navigate({ to: "/checkout" });
   };
   const { data: catalog = [] } = useQuery({ ...productsQueryOptions, enabled: search || saved });
+  const matches = catalog.filter((p) =>
+    (p.name + " " + p.category + " " + p.color).toLowerCase().includes(term.trim().toLowerCase()),
+  );
   const bagCount = cart.items.reduce((a, x) => a + x.quantity, 0);
   const bagTotal = cart.items.reduce((a, x) => a + Number(x.price.amount) * x.quantity, 0);
   const currency = cart.items[0]?.price.currencyCode ?? "USD";
+  const closeMenu = () => setMenu(false);
+
   return (
     <>
       {announcement && (
@@ -61,149 +80,188 @@ export function StoreHeader({ announcement }: { announcement: string }) {
           {announcement}
         </div>
       )}
-      <header className="site-width main-nav">
-        <Link to="/" aria-label="The Threads of Africa home">
-          <Brand />
-        </Link>
-        <nav className="nav-links">
-          <Link to="/shop" search={{ category: "All" }}>
-            Shop all
+      <header className="site-header" data-scrolled={scrolled}>
+        <div className="site-width main-nav">
+          <div className="flex items-center">
+            <Button
+              variant="ghost"
+              size="icon"
+              aria-label="Open menu"
+              className="menu-toggle -ml-2 min-[1151px]:hidden [&_svg]:size-5"
+              onClick={() => setMenu(true)}
+            >
+              <Menu />
+            </Button>
+            <nav className="nav-links" aria-label="Shop">
+              {SHOP_LINKS.map((l) => (
+                <Link key={l.category} to="/shop" search={{ category: l.category }}>
+                  {l.label}
+                </Link>
+              ))}
+              <Link to="/kids">Kids</Link>
+            </nav>
+          </div>
+          <Link to="/" aria-label="The Threads of Africa home">
+            <Brand />
           </Link>
-          <Link to="/shop" search={{ category: "Women" }}>
-            Women
-          </Link>
-          <Link to="/shop" search={{ category: "Men" }}>
-            Men
-          </Link>
-          <Link to="/shop" search={{ category: "New" }}>
-            New in
-          </Link>
-          <Link to="/kids">Kids</Link>
-          <Link to="/heritage">Heritage</Link>
-          <Link to="/story">Our story</Link>
-        </nav>
-        <div className="flex items-center gap-1 justify-end">
-          <Button
-            variant="ghost"
-            size="icon"
-            title="Search"
-            aria-label="Search"
-            onClick={() => setSearch(true)}
-          >
-            <Search />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            title="Favorites"
-            aria-label="Favorites"
-            onClick={() => setSaved(true)}
-            className="relative"
-          >
-            <Heart />
-            {store.favorites.length > 0 && (
-              <span className="absolute -top-0.5 -right-0.5 bg-primary text-primary-foreground rounded-full w-4 h-4 text-[9px]">
-                {store.favorites.length}
-              </span>
-            )}
-          </Button>
-          <Button asChild variant="ghost" size="icon" title="Account" aria-label="Account">
-            <Link to="/account">
-              <User />
-            </Link>
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            title="Shopping bag"
-            aria-label="Shopping bag"
-            onClick={() => cart.setBagOpen(true)}
-            className="relative"
-          >
-            <ShoppingBag />
-            {bagCount > 0 && (
-              <span className="absolute -top-0.5 -right-0.5 bg-primary text-primary-foreground rounded-full w-4 h-4 text-[9px]">
-                {bagCount}
-              </span>
-            )}
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            aria-label="Open menu"
-            className="lg:hidden"
-            onClick={() => setMenu(true)}
-          >
-            <Menu />
-          </Button>
+          <div className="nav-icons">
+            <nav className="nav-links mr-4" aria-label="Brand">
+              <Link to="/heritage">Heritage</Link>
+              <Link to="/story">Our story</Link>
+            </nav>
+            <Button
+              variant="ghost"
+              size="icon"
+              title="Search"
+              aria-label="Search"
+              onClick={() => setSearch(true)}
+              className="[&_svg]:size-5"
+            >
+              <Search />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              title="Favorites"
+              aria-label="Favorites"
+              onClick={() => setSaved(true)}
+              className="relative max-[760px]:hidden [&_svg]:size-5"
+            >
+              <Heart />
+              {store.favorites.length > 0 && (
+                <span className="count-badge">{store.favorites.length}</span>
+              )}
+            </Button>
+            <Button
+              asChild
+              variant="ghost"
+              size="icon"
+              title="Account"
+              aria-label="Account"
+              className="max-[760px]:hidden [&_svg]:size-5"
+            >
+              <Link to="/account">
+                <User />
+              </Link>
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              title="Shopping bag"
+              aria-label="Shopping bag"
+              onClick={() => cart.setBagOpen(true)}
+              className="relative [&_svg]:size-5"
+            >
+              <ShoppingBag />
+              {bagCount > 0 && <span className="count-badge">{bagCount}</span>}
+            </Button>
+          </div>
         </div>
       </header>
+
       <Sheet open={menu} onOpenChange={setMenu}>
-        <SheetContent side="left">
-          <SheetTitle>Threads of Africa</SheetTitle>
-          <SheetDescription>Find your next statement.</SheetDescription>
-          <nav className="flex flex-col gap-6 mt-10">
-            {["All", "Women", "Men", "New"].map((category) => (
-              <Link key={category} to="/shop" search={{ category }} onClick={() => setMenu(false)}>
-                {category === "All" ? "Shop all" : category === "New" ? "New arrivals" : category}
+        <SheetContent side="left" className="menu-panel w-full sm:max-w-sm p-0 flex flex-col">
+          <div className="px-6 pt-6">
+            <SheetTitle className="sr-only">Menu</SheetTitle>
+            <SheetDescription className="sr-only">Browse the collection.</SheetDescription>
+            <Link to="/" onClick={closeMenu} aria-label="The Threads of Africa home">
+              <Brand />
+            </Link>
+          </div>
+          <nav className="px-6 mt-8" aria-label="Menu">
+            {SHOP_LINKS.map((l) => (
+              <Link
+                key={l.category}
+                to="/shop"
+                search={{ category: l.category }}
+                onClick={closeMenu}
+              >
+                {l.category === "New" ? "New arrivals" : l.label} <ArrowRight />
               </Link>
             ))}
-            <Link to="/kids" onClick={() => setMenu(false)}>
-              Kids — Roots & Play
+            <Link to="/kids" onClick={closeMenu}>
+              Kids <ArrowRight />
             </Link>
-            <Link to="/heritage" onClick={() => setMenu(false)}>
-              Heritage
-            </Link>
-            <Link to="/story" onClick={() => setMenu(false)}>
-              Our story
+            <Link to="/heritage" onClick={closeMenu}>
+              Heritage <ArrowRight />
             </Link>
           </nav>
+          <div className="menu-secondary px-6 mt-8 grid grid-cols-2 gap-x-6">
+            <Link to="/story" onClick={closeMenu}>
+              Our story
+            </Link>
+            <Link to="/craft" onClick={closeMenu}>
+              Our craft
+            </Link>
+            <Link to="/account" onClick={closeMenu}>
+              Account
+            </Link>
+            <button
+              type="button"
+              className="text-left py-[7px] text-[13px] text-muted-foreground"
+              onClick={() => {
+                closeMenu();
+                setSaved(true);
+              }}
+            >
+              Favorites{store.favorites.length ? ` (${store.favorites.length})` : ""}
+            </button>
+            <Link to="/contact" onClick={closeMenu}>
+              Contact
+            </Link>
+            <Link to="/faq" onClick={closeMenu}>
+              FAQ
+            </Link>
+          </div>
+          <div className="mt-auto">
+            <div className="weave-band" aria-hidden="true" />
+            <p className="px-6 py-5 serif text-xl italic text-muted-foreground">
+              Every thread tells a story.
+            </p>
+          </div>
         </SheetContent>
       </Sheet>
+
       <Dialog open={search} onOpenChange={setSearch}>
-        <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
-          <DialogTitle>Find your next favorite</DialogTitle>
-          <DialogDescription>Explore the collection.</DialogDescription>
-          <div className="flex border-b py-3 gap-3">
-            <Search className="size-5" />
+        <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto rounded-none">
+          <DialogTitle className="serif text-3xl font-medium">Search the collection</DialogTitle>
+          <DialogDescription>Dresses, shirts, sets, colours…</DialogDescription>
+          <div className="flex items-center border-b border-foreground/30 py-3 gap-3">
+            <Search className="size-5 text-muted-foreground" />
             <input
               autoFocus
               aria-label="Search products"
-              placeholder="Search dresses, shirts, sets…"
-              className="bg-transparent outline-none flex-1 min-w-0"
+              placeholder="What are you looking for?"
+              className="bg-transparent outline-none flex-1 min-w-0 text-lg"
               value={term}
               onChange={(e) => setTerm(e.target.value)}
             />
           </div>
           <div
-            className="grid grid-cols-2 gap-4"
+            className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-8"
             onClick={(e) => {
               if ((e.target as HTMLElement).closest("a")) setSearch(false);
             }}
           >
-            {catalog
-              .filter((p) => (p.name + " " + p.category).toLowerCase().includes(term.toLowerCase()))
-              .map((p) => (
-                <ProductCard key={p.id} product={p} />
-              ))}
+            {matches.map((p) => (
+              <ProductCard key={p.id} product={p} />
+            ))}
           </div>
-          {catalog.length > 0 &&
-            catalog.every(
-              (p) => !(p.name + " " + p.category).toLowerCase().includes(term.toLowerCase()),
-            ) && (
-              <p className="py-10 text-center text-muted-foreground">
-                No pieces found. Try “dress” or “shirt”.
-              </p>
-            )}
+          {catalog.length > 0 && matches.length === 0 && (
+            <p className="py-10 text-center text-muted-foreground">
+              No pieces found. Try “dress” or “shirt”.
+            </p>
+          )}
         </DialogContent>
       </Dialog>
+
       <Dialog open={saved} onOpenChange={setSaved}>
-        <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
-          <DialogTitle>Your favorites</DialogTitle>
+        <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto rounded-none">
+          <DialogTitle className="serif text-3xl font-medium">Your favorites</DialogTitle>
           <DialogDescription>The pieces you keep coming back to.</DialogDescription>
           {store.favorites.length ? (
             <div
-              className="grid grid-cols-2 gap-4"
+              className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-8"
               onClick={(e) => {
                 if ((e.target as HTMLElement).closest("a")) setSaved(false);
               }}
@@ -216,15 +274,16 @@ export function StoreHeader({ announcement }: { announcement: string }) {
             </div>
           ) : (
             <div className="py-14 text-center">
-              <Heart className="mx-auto mb-4 size-8" />
+              <Heart className="mx-auto mb-4 size-8 text-gold" />
               <p>No favorites yet.</p>
-              <Button className="mt-5" onClick={() => setSaved(false)}>
-                Keep exploring
-              </Button>
+              <button type="button" className="cta cta-solid mt-6" onClick={() => setSaved(false)}>
+                Keep exploring <ArrowRight />
+              </button>
             </div>
           )}
         </DialogContent>
       </Dialog>
+
       <Sheet
         open={cart.bagOpen}
         onOpenChange={(open) => {
@@ -232,7 +291,9 @@ export function StoreHeader({ announcement }: { announcement: string }) {
         }}
       >
         <SheetContent className="w-full sm:max-w-md flex flex-col">
-          <SheetTitle>Your shopping bag ({bagCount})</SheetTitle>
+          <SheetTitle className="serif text-3xl font-medium">
+            Your bag{bagCount ? ` (${bagCount})` : ""}
+          </SheetTitle>
           <SheetDescription>A little culture. A lot of style.</SheetDescription>
           <div className="flex-1 overflow-y-auto">
             {cart.items.length ? (
@@ -240,14 +301,16 @@ export function StoreHeader({ announcement }: { announcement: string }) {
                 <div className="bag-row" key={item.variantId}>
                   <img src={item.product.image} alt={item.product.name} />
                   <div>
-                    <h3 className="text-sm">{item.product.name}</h3>
+                    <div className="flex justify-between gap-3">
+                      <h3 className="text-sm font-medium">{item.product.name}</h3>
+                      <p className="text-sm whitespace-nowrap">
+                        {money(Number(item.price.amount) * item.quantity, item.price.currencyCode)}
+                      </p>
+                    </div>
                     <p className="text-xs text-muted-foreground my-2">
                       {item.selectedOptions.map((o) => o.value).join(" / ")}
                     </p>
-                    <p className="text-sm">
-                      {money(Number(item.price.amount), item.price.currencyCode)}
-                    </p>
-                    <div className="flex items-center justify-between mt-2">
+                    <div className="flex items-center justify-between mt-3">
                       <div className="flex items-center border">
                         <Button
                           variant="ghost"
@@ -284,18 +347,22 @@ export function StoreHeader({ announcement }: { announcement: string }) {
               ))
             ) : (
               <div className="py-20 text-center">
-                <ShoppingBag className="mx-auto mb-5 size-10" />
-                <p>Your bag is waiting for a story.</p>
-                <Button onClick={() => cart.setBagOpen(false)} className="mt-6">
+                <ShoppingBag className="mx-auto mb-5 size-10 text-gold" />
+                <p className="serif text-2xl">Your bag is waiting for a story.</p>
+                <button
+                  type="button"
+                  onClick={() => cart.setBagOpen(false)}
+                  className="cta cta-solid mt-7"
+                >
                   Continue exploring <ArrowRight />
-                </Button>
+                </button>
               </div>
             )}
           </div>
           {cart.items.length > 0 && (
             <div className="border-t pt-5">
-              <div className="flex justify-between mb-4">
-                <span>Subtotal</span>
+              <div className="flex justify-between mb-2">
+                <span className="text-sm">Subtotal</span>
                 <strong>{money(bagTotal, currency)}</strong>
               </div>
               {cart.notice && (
@@ -304,16 +371,20 @@ export function StoreHeader({ announcement }: { announcement: string }) {
                 </p>
               )}
               <p className="text-xs text-muted-foreground mb-5">
-                Taxes and shipping calculated at checkout.
+                Delivery and any taxes are calculated at checkout.
               </p>
-              <Button
-                className="w-full h-12"
+              <button
+                type="button"
+                className="cta cta-solid w-full disabled:opacity-60"
                 disabled={cart.isLoading || cart.isSyncing}
                 onClick={checkout}
               >
                 Checkout <ArrowRight />
-              </Button>
-              <Button variant="link" className="w-full mt-2" onClick={() => cart.setBagOpen(false)}>
+              </button>
+              <p className="mt-3 flex items-center justify-center gap-2 text-[11px] text-muted-foreground">
+                <Lock className="size-3" /> Secure payment by Stripe
+              </p>
+              <Button variant="link" className="w-full mt-1" onClick={() => cart.setBagOpen(false)}>
                 Continue shopping
               </Button>
             </div>
@@ -323,60 +394,30 @@ export function StoreHeader({ announcement }: { announcement: string }) {
     </>
   );
 }
-export function Benefits() {
-  return (
-    <div className="site-width benefits">
-      <div>
-        <Scissors className="size-4" />
-        Culture in every detail
-      </div>
-      <div>
-        <Leaf className="size-4" />
-        Thoughtfully designed
-      </div>
-      <div>
-        <PackageCheck className="size-4" />
-        Made for everyday expression
-      </div>
-      <div>
-        <Globe className="size-4" />
-        African roots. Global spirit.
-      </div>
-    </div>
-  );
-}
+
 export function StoreFooter({ settings }: { settings: PublicSettings }) {
+  const socials = [
+    ["Instagram", settings.instagramUrl],
+    ["TikTok", settings.tiktokUrl],
+    ["Facebook", settings.facebookUrl],
+    ["Pinterest", settings.pinterestUrl],
+  ].filter(([, u]) => u);
   return (
-    <footer className="site-width">
-      <div className="footer-grid">
-        <div>
-          <Link to="/" aria-label="The Threads of Africa home">
-            <img
-              src={logoUrl}
-              alt="The Threads of Africa — Every Thread Tells a Story"
-              className="brand-logo"
-            />
-          </Link>
-          <p className="text-xs text-muted-foreground leading-6 mt-5 max-w-[270px]">
-            Rooted in Heritage. Designed for Now.
-            <br />
-            Every Thread Tells a Story.
-          </p>
-          {[
-            ["Instagram", settings.instagramUrl],
-            ["TikTok", settings.tiktokUrl],
-            ["Facebook", settings.facebookUrl],
-            ["Pinterest", settings.pinterestUrl],
-          ].some(([, u]) => u) && (
-            <p className="mt-4 flex flex-wrap gap-x-4 gap-y-1 text-xs">
-              {[
-                ["Instagram", settings.instagramUrl],
-                ["TikTok", settings.tiktokUrl],
-                ["Facebook", settings.facebookUrl],
-                ["Pinterest", settings.pinterestUrl],
-              ]
-                .filter(([, u]) => u)
-                .map(([label, url]) => (
+    <footer className="site-footer">
+      <div className="weave-band" aria-hidden="true" />
+      <div className="site-width">
+        <div className="footer-grid">
+          <div>
+            <Link to="/" aria-label="The Threads of Africa home">
+              <Brand className="footer-brand" />
+            </Link>
+            <p className="serif text-2xl italic mt-6 max-w-[300px] text-primary-foreground">
+              Rooted in heritage. Designed for now.
+            </p>
+            <p className="text-xs mt-3 opacity-70">Every thread tells a story.</p>
+            {socials.length > 0 && (
+              <p className="social-links mt-6 flex flex-wrap gap-x-5 gap-y-1 text-xs">
+                {socials.map(([label, url]) => (
                   <a
                     key={label}
                     href={url}
@@ -387,49 +428,49 @@ export function StoreFooter({ settings }: { settings: PublicSettings }) {
                     {label}
                   </a>
                 ))}
-            </p>
-          )}
+              </p>
+            )}
+          </div>
+          <div>
+            <h2>Shop</h2>
+            <Link to="/shop" search={{ category: "New" }}>
+              New arrivals
+            </Link>
+            <Link to="/shop" search={{ category: "Women" }}>
+              Women
+            </Link>
+            <Link to="/shop" search={{ category: "Men" }}>
+              Men
+            </Link>
+            <Link to="/kids">Kids — Roots & Play</Link>
+            <Link to="/heritage">Heritage</Link>
+          </div>
+          <div>
+            <h2>About</h2>
+            <Link to="/story">Our story</Link>
+            <Link to="/craft">Our craft</Link>
+            <Link to="/responsibility">Responsibility</Link>
+            <Link to="/wholesale">Wholesale</Link>
+            <Link to="/collaborations">Collaborations</Link>
+          </div>
+          <div>
+            <h2>Help</h2>
+            <Link to="/contact">Contact</Link>
+            <Link to="/faq">FAQ</Link>
+            <Link to="/size-guide">Size guide</Link>
+            <Link to="/shipping">Shipping & delivery</Link>
+            <Link to="/returns">Returns & exchanges</Link>
+          </div>
         </div>
-        <div>
-          <h2>Shop</h2>
-          <Link to="/shop" search={{ category: "New" }}>
-            New arrivals
-          </Link>
-          <Link to="/shop" search={{ category: "Women" }}>
-            Women
-          </Link>
-          <Link to="/shop" search={{ category: "Men" }}>
-            Men
-          </Link>
-          <Link to="/kids">Kids — Roots & Play</Link>
-          <Link to="/heritage">Heritage</Link>
+        <div className="footer-bottom">
+          <p>
+            © {new Date().getFullYear()} {settings.storeName}. All rights reserved.
+          </p>
+          <span>
+            <a href={`mailto:${settings.contactEmail}`}>{settings.contactEmail}</a> ·{" "}
+            <Link to="/privacy">Privacy</Link> · <Link to="/terms">Terms</Link>
+          </span>
         </div>
-        <div>
-          <h2>About</h2>
-          <Link to="/story">Our story</Link>
-          <Link to="/craft">Our craft</Link>
-          <Link to="/responsibility">Responsibility</Link>
-          <Link to="/wholesale">Wholesale</Link>
-          <Link to="/collaborations">Collaborations</Link>
-        </div>
-        <div>
-          <h2>Help</h2>
-          <Link to="/contact">Contact</Link>
-          <Link to="/faq">FAQ</Link>
-          <Link to="/size-guide">Size guide</Link>
-          <Link to="/shipping">Shipping & delivery</Link>
-          <Link to="/returns">Returns & exchanges</Link>
-        </div>
-      </div>
-      <div className="footer-bottom">
-        <p>
-          © {new Date().getFullYear()} {settings.storeName}. All rights reserved. Every Thread Tells
-          a Story.
-        </p>
-        <span>
-          <a href={`mailto:${settings.contactEmail}`}>{settings.contactEmail}</a> ·{" "}
-          <Link to="/privacy">Privacy</Link> · <Link to="/terms">Terms</Link>
-        </span>
       </div>
     </footer>
   );

@@ -1,16 +1,17 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowRight, ArrowUpRight } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { Button } from "@/components/ui/button";
 import { ProductCard, EmptyProducts } from "@/components/product-card";
-import { Benefits } from "@/components/store-shell";
 import { productsQueryOptions } from "@/lib/catalog";
 import campaign from "@/assets/campaign.jpg";
-import story from "@/assets/story.jpg";
+import heritage from "@/assets/heritage.jpg";
+import craft from "@/assets/craft.jpg";
 import amara from "@/assets/amara.jpg";
 import kofi from "@/assets/kofi.jpg";
-import { brandValues } from "@/lib/brand-content";
+import kids from "@/assets/kids.jpg";
+import { brandValues, contentPages } from "@/lib/brand-content";
 import { NewsletterForm } from "@/components/newsletter-form";
+
 export const Route = createFileRoute("/")({
   loader: async ({ context }) => {
     await context.queryClient.ensureQueryData(productsQueryOptions);
@@ -31,8 +32,44 @@ export const Route = createFileRoute("/")({
   }),
   component: Home,
 });
+
+const MARQUEE = [
+  "Rooted in heritage",
+  "Designed for now",
+  "Every thread tells a story",
+  "Aso-Oke",
+  "Adire",
+  "Made for everyday expression",
+];
+
+const CATEGORIES = [
+  {
+    title: "For her",
+    note: "Bold. Beautiful. Unapologetic.",
+    image: amara,
+    alt: "Women’s Ankara dress collection",
+    link: { to: "/shop", search: { category: "Women" } },
+  },
+  {
+    title: "For him",
+    note: "Considered. Confident. Original.",
+    image: kofi,
+    alt: "Men’s heritage shirt collection",
+    link: { to: "/shop", search: { category: "Men" } },
+  },
+  {
+    title: "Roots & Play",
+    note: "Culture made playful.",
+    image: kids,
+    alt: "Children in playful African-print outfits",
+    link: { to: "/kids" },
+  },
+] as const;
+
 function Home() {
   const { data: products } = useSuspenseQuery(productsQueryOptions);
+  // The three textile stories; the heritage page's last note is about sample products, not for here.
+  const textiles = contentPages.heritage.sections.slice(0, 3);
   return (
     <main>
       <section className="hero">
@@ -44,210 +81,200 @@ function Home() {
           height={1024}
           fetchPriority="high"
         />
+        <div className="hero-shade" aria-hidden="true" />
         <div className="site-width hero-copy">
-          <span className="eyebrow">Rooted in Heritage. Designed for Now.</span>
+          <span className="eyebrow eyebrow-gold">The Threads of Africa</span>
           <h1>
-            The Threads
-            <br />
-            of Africa.
+            Rooted in heritage. <em>Designed for now.</em>
           </h1>
           <p className="hero-sub">
             Contemporary African fashion connecting heritage, craftsmanship, culture, and modern
             living.
           </p>
-          <Button asChild size="lg" className="h-12 rounded-none px-7 text-xs">
-            <Link to="/shop" search={{ category: "New" }}>
-              Shop new arrivals <ArrowRight className="ml-4" />
+          <div className="hero-actions">
+            <Link to="/shop" search={{ category: "Women" }} className="cta cta-light">
+              Shop women <ArrowRight />
             </Link>
-          </Button>
-          <Link to="/story" className="text-xs mt-5 underline underline-offset-4">
-            Discover our story.
-          </Link>
+            <Link to="/shop" search={{ category: "Men" }} className="cta cta-outline-light">
+              Shop men <ArrowRight />
+            </Link>
+          </div>
         </div>
-        <div className="hero-pagination" aria-hidden="true">
-          <span />
-          <span className="opacity-30" />
-          <span className="opacity-30" />
+        <div className="site-width hero-foot" aria-hidden="true">
+          <span className="hide-sm">Every thread tells a story</span>
+          <span className="scroll-cue">Scroll</span>
         </div>
-        <div className="hero-note">EVERY THREAD TELLS A STORY.</div>
       </section>
-      <Benefits />
-      <section className="site-width py-12 sm:py-16 grid md:grid-cols-2 gap-8">
-        <div>
-          <p className="eyebrow text-muted-foreground mb-4">
-            Rooted in heritage. Designed for now.
-          </p>
-          <h2 className="text-3xl sm:text-4xl">Every thread tells a story.</h2>
+
+      <div className="marquee" aria-hidden="true">
+        <div className="marquee-track">
+          {[...MARQUEE, ...MARQUEE].map((word, i) => (
+            <span key={i}>{word}</span>
+          ))}
         </div>
-        <div className="text-sm leading-8 text-muted-foreground">
-          <p>
+      </div>
+
+      <section className="site-width section grid md:grid-cols-[1fr_1.2fr] gap-8 md:gap-20 items-start">
+        <div>
+          <p className="eyebrow text-muted-foreground mb-5">Our story</p>
+          <h2 className="text-5xl md:text-6xl leading-[1.02]">Every thread tells a story.</h2>
+        </div>
+        <div>
+          <p className="lede">
             The Threads of Africa is a contemporary fashion brand inspired by the richness of
             African culture, craftsmanship, textiles, and creative expression. We reinterpret
             heritage for modern life through thoughtfully designed clothing for women, men, and
             children.
           </p>
-          <p className="mt-4">
+          <p className="lede mt-5">
             From culturally inspired statement pieces to elevated everyday essentials, every
             collection celebrates the connection between where we come from and where we are going.
           </p>
+          <Link to="/story" className="text-link mt-8">
+            Discover our story <ArrowRight />
+          </Link>
         </div>
       </section>
-      <section className="site-width py-14 sm:py-16">
+
+      <section className="site-width pb-[88px] max-md:pb-[60px]">
         <div className="section-heading">
           <div>
-            <p className="eyebrow text-muted-foreground">Discover the collection</p>
-            <h2>New arrivals & the edit.</h2>
+            <p className="eyebrow text-muted-foreground">Shop by collection</p>
+            <h2>Find your expression.</h2>
           </div>
-          <Button asChild variant="link" className="p-0 text-xs">
-            <Link to="/shop" search={{ category: "All" }}>
-              Shop the edit <ArrowUpRight />
-            </Link>
-          </Button>
         </div>
-        {products.length ? (
-          <div className="product-grid">
-            {products.map((p) => (
-              <ProductCard key={p.id} product={p} />
-            ))}
-          </div>
-        ) : (
-          <EmptyProducts />
-        )}
+        <div className="category-grid">
+          {CATEGORIES.map((c) => (
+            <Link key={c.title} {...c.link} className="category-tile">
+              <img src={c.image} alt={c.alt} loading="lazy" width={512} height={683} />
+              <div className="category-label">
+                <p className="eyebrow opacity-85">{c.note}</p>
+                <h3>{c.title}</h3>
+                <span className="text-link text-primary-foreground">
+                  Shop now <ArrowRight />
+                </span>
+              </div>
+            </Link>
+          ))}
+        </div>
       </section>
-      <section className="editorial">
-        <img
-          className="editorial-image"
-          src={story}
-          alt="Expressive African print and contemporary linen clothing"
-          width={1536}
-          height={1024}
-          loading="lazy"
-        />
-        <div className="editorial-copy">
-          <span className="eyebrow">Heritage, reimagined</span>
+
+      <section className="bg-sand">
+        <div className="site-width section">
+          <div className="section-heading">
+            <div>
+              <p className="eyebrow text-muted-foreground">Discover the collection</p>
+              <h2>New arrivals &amp; the edit.</h2>
+            </div>
+            <Link to="/shop" search={{ category: "All" }} className="text-link shrink-0">
+              Shop all <ArrowRight />
+            </Link>
+          </div>
+          {products.length ? (
+            <div className="product-row">
+              {products.slice(0, 8).map((p) => (
+                <ProductCard key={p.id} product={p} />
+              ))}
+            </div>
+          ) : (
+            <EmptyProducts />
+          )}
+        </div>
+      </section>
+
+      <section className="split dark">
+        <div className="split-media">
+          <img
+            src={heritage}
+            alt="Handwoven Aso-Oke and Adire textiles"
+            width={1600}
+            height={912}
+            loading="lazy"
+          />
+        </div>
+        <div className="split-copy">
+          <span className="eyebrow eyebrow-gold">Heritage, reimagined</span>
           <h2>Wear the story.</h2>
           <p>
             African textiles carry generations of craftsmanship, identity, and creativity. From
             Aso-Oke accents to Adire-inspired designs, our Heritage Collection celebrates tradition
             while creating something new.
           </p>
-          <Button
-            asChild
-            variant="outline"
-            className="rounded-none bg-transparent h-11 px-6 text-xs"
-          >
-            <Link to="/heritage">
-              Explore our heritage <ArrowUpRight className="ml-2" />
-            </Link>
-          </Button>
-        </div>
-      </section>
-      <section className="site-width py-14 sm:py-16">
-        <div className="section-heading">
-          <div>
-            <p className="eyebrow text-muted-foreground">Your style. Your story.</p>
-            <h2>Find your expression.</h2>
-          </div>
-          <span className="text-xs text-muted-foreground hidden sm:block">
-            A little heritage. Entirely you.
-          </span>
-        </div>
-        <div className="collection-grid">
-          <Link to="/shop" search={{ category: "Women" }} className="collection-tile">
-            <img
-              src={amara}
-              alt="Women’s Ankara dress collection"
-              loading="lazy"
-              width={512}
-              height={1024}
-            />
-            <div className="collection-label">
-              <div>
-                <p className="eyebrow mb-2">Bold. Beautiful. Unapologetic.</p>
-                <h3>For her.</h3>
-              </div>
-              <ArrowUpRight />
-            </div>
-          </Link>
-          <Link to="/shop" search={{ category: "Men" }} className="collection-tile">
-            <img
-              src={kofi}
-              alt="Men’s heritage shirt collection"
-              loading="lazy"
-              width={512}
-              height={1024}
-            />
-            <div className="collection-label">
-              <div>
-                <p className="eyebrow mb-2">Considered. Confident. Original.</p>
-                <h3>For him.</h3>
-              </div>
-              <ArrowUpRight />
-            </div>
+          <Link to="/heritage" className="cta cta-light">
+            Explore our heritage <ArrowRight />
           </Link>
         </div>
       </section>
-      <section className="bg-secondary">
-        <div className="site-width py-12 sm:py-16 grid md:grid-cols-2 gap-10">
-          <div>
-            <p className="eyebrow text-muted-foreground mb-4">Roots & Play</p>
-            <h2 className="text-3xl">Culture made playful.</h2>
-            <p className="text-sm leading-7 text-muted-foreground mt-5">
-              Our children’s collection is designed for movement, imagination, comfort, and
-              personality. Created for little personalities with big stories.
-            </p>
-            <Button asChild variant="link" className="px-0 mt-4">
-              <Link to="/kids">
-                Discover Roots & Play <ArrowUpRight />
-              </Link>
-            </Button>
-          </div>
-          <div>
-            <p className="eyebrow text-muted-foreground mb-4">Our craft</p>
-            <h2 className="text-3xl">Designed with intention.</h2>
-            <p className="text-sm leading-7 text-muted-foreground mt-5">
-              Every Threads of Africa piece begins with an idea. From selecting materials to
-              refining the fit and finishing the smallest details, we believe good design should
-              feel considered.
-            </p>
-            <Button asChild variant="link" className="px-0 mt-4">
-              <Link to="/craft">
-                From idea to garment <ArrowUpRight />
-              </Link>
-            </Button>
-          </div>
-        </div>
-      </section>
-      <section className="site-width py-12 sm:py-16">
+
+      <section className="site-width section">
         <div className="section-heading">
           <div>
-            <p className="eyebrow text-muted-foreground">From an idea to a story</p>
-            <h2>A new chapter in African creativity.</h2>
+            <p className="eyebrow text-muted-foreground">The textiles behind the pieces</p>
+            <h2>Textiles with a story.</h2>
           </div>
         </div>
-        <p className="text-sm text-muted-foreground leading-8 max-w-3xl">
-          The Threads of Africa began with a love for fashion and a desire to celebrate African
-          creativity in a contemporary way. Our journey is about creating beautiful clothing while
-          helping traditional inspiration find new forms, new audiences, and new generations.
-        </p>
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-8 mt-10">
-          {brandValues.map(([title, text]) => (
-            <div key={title}>
-              <h3 className="text-xl mb-3">{title}</h3>
-              <p className="text-xs text-muted-foreground leading-6">{text}</p>
-            </div>
+        <div className="feature-grid">
+          {textiles.map(([title, text], i) => (
+            <article key={title} className="feature-card">
+              <span className="feature-num">0{i + 1}</span>
+              <h3>{title}</h3>
+              <p>{text}</p>
+            </article>
           ))}
         </div>
-        <Button asChild variant="link" className="px-0 mt-6">
-          <Link to="/responsibility">
-            Our approach to responsible growth <ArrowUpRight />
-          </Link>
-        </Button>
       </section>
+
+      <section className="split sand reverse">
+        <div className="split-media">
+          <img
+            src={craft}
+            alt="A designer refining the details of a garment"
+            width={1600}
+            height={912}
+            loading="lazy"
+          />
+        </div>
+        <div className="split-copy">
+          <span className="eyebrow text-muted-foreground">Our craft</span>
+          <h2>Designed with intention.</h2>
+          <p>
+            Every Threads of Africa piece begins with an idea. From selecting materials to refining
+            the fit and finishing the smallest details, we believe good design should feel
+            considered.
+          </p>
+          <Link to="/craft" className="cta cta-solid">
+            From idea to garment <ArrowRight />
+          </Link>
+        </div>
+      </section>
+
+      <section className="site-width section">
+        <div className="grid md:grid-cols-[1fr_2fr] gap-10 md:gap-20">
+          <div>
+            <p className="eyebrow text-muted-foreground mb-5">What we stand for</p>
+            <h2 className="text-5xl leading-[1.02]">A new chapter in African creativity.</h2>
+            <Link to="/responsibility" className="text-link mt-8">
+              Responsible growth <ArrowRight />
+            </Link>
+          </div>
+          <div className="values-grid">
+            {brandValues.map(([title, text], i) => (
+              <div key={title}>
+                <h3>
+                  <span>0{i + 1}</span>
+                  {title}
+                </h3>
+                <p>{text}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       <section className="newsletter">
         <div className="site-width newsletter-inner">
           <div>
-            <span className="eyebrow">Join the story</span>
+            <span className="eyebrow eyebrow-gold">Join the story</span>
             <h2>Every thread. Every new chapter.</h2>
             <p>
               Receive collection releases, styling inspiration, early access, and stories from The

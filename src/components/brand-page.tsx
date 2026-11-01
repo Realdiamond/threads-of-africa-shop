@@ -1,6 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { ArrowUpRight } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { ArrowRight, ChevronDown } from "lucide-react";
 import kids from "@/assets/kids.jpg";
 import heritage from "@/assets/heritage.jpg";
 import craft from "@/assets/craft.jpg";
@@ -51,60 +50,66 @@ export function BrandPage({ pageKey }: { pageKey: ContentPageKey }) {
   };
   const fill = (t?: string) => (t ?? "").replaceAll("{{email}}", settings.contactEmail);
   const p = contentPages[pageKey];
+  const image = pageImages[pageKey];
   return (
     <main>
-      <header className="site-width py-12 sm:py-16">
-        <p className="eyebrow text-muted-foreground mb-5">{p.eyebrow}</p>
-        <h1 className="page-title leading-tight max-w-3xl">{p.headline}</h1>
-        <p className="mt-6 max-w-2xl text-sm leading-7 text-muted-foreground">{fill(p.intro)}</p>
-      </header>
-      {pageImages[pageKey] && (
-        <div className="site-width pb-12">
-          <img
-            src={pageImages[pageKey][0]}
-            alt={pageImages[pageKey][1]}
-            width={1600}
-            height={912}
-            className="w-full aspect-[16/9] md:aspect-[21/9] object-cover"
-          />
-        </div>
+      {image ? (
+        <header className="page-hero">
+          <img src={image[0]} alt={image[1]} width={1600} height={912} fetchPriority="high" />
+          <div className="site-width page-hero-copy">
+            <p className="eyebrow eyebrow-gold">{p.eyebrow}</p>
+            <h1>{p.headline}</h1>
+            <p>{fill(p.intro)}</p>
+          </div>
+        </header>
+      ) : (
+        <header className="site-width section-tight">
+          <p className="eyebrow text-muted-foreground mb-5">{p.eyebrow}</p>
+          <h1 className="page-title max-w-3xl">{p.headline}</h1>
+          <p className="lede mt-6 max-w-2xl">{fill(p.intro)}</p>
+        </header>
       )}
-      <section className="bg-secondary">
-        <div className="site-width py-8 sm:py-12">
-          {p.sections.map(([title, text]) =>
-            pageKey === "faq" ? (
-              <details key={title} className="border-b py-6">
-                <summary className="text-lg cursor-pointer font-display">{title}</summary>
-                <p className="text-sm leading-7 text-muted-foreground max-w-3xl mt-4">
-                  {fill(text)}
-                </p>
+      <section className="site-width section-tight">
+        {pageKey === "faq" ? (
+          <div className="max-w-4xl">
+            {p.sections.map(([title, text]) => (
+              <details key={title} className="group border-b py-6">
+                <summary className="flex cursor-pointer list-none items-center justify-between gap-6 serif text-2xl">
+                  {title}
+                  <ChevronDown className="size-5 shrink-0 text-gold transition-transform group-open:rotate-180" />
+                </summary>
+                <p className="lede mt-4 max-w-3xl">{fill(text)}</p>
               </details>
-            ) : (
-              <div
-                key={title}
-                className="grid md:grid-cols-[1fr_2fr] gap-4 md:gap-12 py-7 border-b last:border-b-0"
-              >
-                <h2 className="text-2xl">{title}</h2>
-                <p className="text-sm leading-8 text-muted-foreground max-w-3xl">{fill(text)}</p>
-              </div>
-            ),
-          )}
-        </div>
+            ))}
+          </div>
+        ) : (
+          p.sections.map(([title, text], i) => (
+            <div key={title} className="chapter">
+              <span className="feature-num">{String(i + 1).padStart(2, "0")}</span>
+              <h2>{title}</h2>
+              <p>{fill(text)}</p>
+            </div>
+          ))
+        )}
       </section>
       {formTopics[pageKey] && (
-        <section className="site-width max-w-3xl pt-12">
-          <ContactForm defaultTopic={formTopics[pageKey]} />
+        <section className="bg-sand">
+          <div className="site-width section-tight max-w-3xl">
+            <ContactForm defaultTopic={formTopics[pageKey]} />
+          </div>
         </section>
       )}
-      <div className="site-width py-12 flex flex-wrap gap-4">
-        <Button asChild className="rounded-none">
-          <Link to="/shop" search={{ category: "All" }}>
-            Explore the collection <ArrowUpRight />
+      <div className="weave-band" aria-hidden="true" />
+      <div className="site-width section-tight flex flex-wrap items-center justify-between gap-6">
+        <p className="serif text-3xl">Every thread tells a story.</p>
+        <div className="flex flex-wrap gap-3">
+          <Link to="/shop" search={{ category: "All" }} className="cta cta-solid">
+            Explore the collection <ArrowRight />
           </Link>
-        </Button>
-        <Button asChild variant="outline" className="rounded-none">
-          <Link to="/story">Discover our story</Link>
-        </Button>
+          <Link to="/story" className="cta cta-outline">
+            Discover our story
+          </Link>
+        </div>
       </div>
     </main>
   );
