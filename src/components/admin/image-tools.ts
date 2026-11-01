@@ -1,7 +1,8 @@
 const MAX_SIDE = 1600;
 
 // Shrinks a photo in the browser before it is uploaded: phone photos are often 4-8 MB, which
-// would make the shop slow. Output is a JPEG at most 1600px on the long side.
+// would make the shop slow. Output is at most 1600px on the long side, saved as WebP (about a
+// third smaller than JPEG at the same quality) or as JPEG where the browser cannot write WebP.
 export async function prepareImage(file: File): Promise<Blob> {
   let bitmap: ImageBitmap;
   try {
@@ -22,9 +23,11 @@ export async function prepareImage(file: File): Promise<Blob> {
   context.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
   bitmap.close();
 
-  const blob = await new Promise<Blob | null>((resolve) =>
-    canvas.toBlob(resolve, "image/jpeg", 0.85),
-  );
+  const encode = (type: string, quality: number) =>
+    new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, type, quality));
+  // A browser that cannot write WebP silently hands back a PNG instead, so check what came out.
+  const webp = await encode("image/webp", 0.82);
+  const blob = webp?.type === "image/webp" ? webp : await encode("image/jpeg", 0.85);
   if (!blob) throw new Error("Your browser could not process that photo.");
   // Keep the original when it is already smaller and a supported type.
   const keepOriginal =
