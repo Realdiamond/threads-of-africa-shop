@@ -268,6 +268,30 @@ export function countryName(code: string): string {
   }
 }
 
+const fold = (text: string) =>
+  text
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim();
+
+// How well a search box entry matches a country, for ranking (0 = hide it). Accents and case are
+// ignored ("cote" finds Côte d'Ivoire); a name that starts with the search ranks first, then a word
+// inside the name ("kingdom" finds United Kingdom), then the search appearing anywhere. An exact
+// two-letter code also matches ("gb", "ng"). No fuzzy matching: "nig" must not list Singapore.
+export function countrySearchScore(code: string, name: string, search: string): number {
+  const query = fold(search);
+  if (!query) return 1;
+  const folded = fold(name);
+  if (folded.startsWith(query)) return 1;
+  if (query.length === 2 && code.toLowerCase() === query) return 0.95;
+  if (folded.split(/[\s\-(&.,']+/).some((word) => word.startsWith(query))) return 0.8;
+  // One or two letters appear inside too many names ("ng" is in "Kingdom"), so only match those
+  // at the start of a word.
+  if (query.length >= 3 && folded.includes(query)) return 0.5;
+  return 0;
+}
+
 export function countryOptions(): Array<{ code: string; name: string }> {
   return COUNTRY_CODES.map((code) => ({ code, name: countryName(code) })).sort((a, b) =>
     a.name.localeCompare(b.name),

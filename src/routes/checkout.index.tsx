@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 
 import { checkoutPrefillFn } from "@/backend/customers.functions";
 import { cancelCheckoutFn, getCheckoutSummaryFn, placeOrderFn } from "@/backend/orders.functions";
+import { CountryCombobox } from "@/components/country-combobox";
 import { Button } from "@/components/ui/button";
 import { checkCheckoutForm } from "@/lib/checkout-validation";
 import { countryName } from "@/lib/countries";
@@ -350,22 +351,14 @@ function CheckoutPage() {
               <label htmlFor="co-country" className="text-sm">
                 Country
               </label>
-              <select
+              <CountryCombobox
                 id="co-country"
-                name="country"
                 className={fieldClass}
                 value={form.country}
-                onChange={(event) => set("country")(event.target.value)}
-                autoComplete="country"
-                aria-invalid={errors.country ? true : undefined}
-              >
-                <option value="">Choose a country…</option>
-                {countries.map((code) => (
-                  <option key={code} value={code}>
-                    {countryName(code)}
-                  </option>
-                ))}
-              </select>
+                countries={countries}
+                onChange={set("country")}
+                invalid={Boolean(errors.country)}
+              />
               {errors.country && (
                 <p role="alert" className="text-xs text-destructive">
                   {errors.country}
