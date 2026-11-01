@@ -62,7 +62,6 @@ import { Route as AdminProductsNewRouteImport } from './routes/admin.products.ne
 import { Route as ApiAdminOrdersDotcsvRouteImport } from './routes/api.admin.orders[.]csv'
 import { Route as ApiAdminSubscribersDotcsvRouteImport } from './routes/api.admin.subscribers[.]csv'
 import { Route as ApiAdminUploadRouteImport } from './routes/api.admin.upload'
-import { Route as ApiPaymentsEventsRouteImport } from './routes/api.payments.events'
 import { Route as ApiStripeWebhookRouteImport } from './routes/api.stripe.webhook'
 
 const IndexRoute = IndexRouteImport.update({
@@ -331,11 +330,6 @@ const ApiAdminUploadRoute = ApiAdminUploadRouteImport.update({
   path: '/api/admin/upload',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiPaymentsEventsRoute = ApiPaymentsEventsRouteImport.update({
-  id: '/api/payments/events',
-  path: '/api/payments/events',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const ApiStripeWebhookRoute = ApiStripeWebhookRouteImport.update({
   id: '/api/stripe/webhook',
   path: '/api/stripe/webhook',
@@ -393,7 +387,6 @@ export interface FileRoutesByFullPath {
   '/api/admin/orders.csv': typeof ApiAdminOrdersDotcsvRoute
   '/api/admin/subscribers.csv': typeof ApiAdminSubscribersDotcsvRoute
   '/api/admin/upload': typeof ApiAdminUploadRoute
-  '/api/payments/events': typeof ApiPaymentsEventsRoute
   '/api/stripe/webhook': typeof ApiStripeWebhookRoute
   '/admin/orders/': typeof AdminOrdersIndexRoute
   '/admin/pages/': typeof AdminPagesIndexRoute
@@ -449,7 +442,6 @@ export interface FileRoutesByTo {
   '/api/admin/orders.csv': typeof ApiAdminOrdersDotcsvRoute
   '/api/admin/subscribers.csv': typeof ApiAdminSubscribersDotcsvRoute
   '/api/admin/upload': typeof ApiAdminUploadRoute
-  '/api/payments/events': typeof ApiPaymentsEventsRoute
   '/api/stripe/webhook': typeof ApiStripeWebhookRoute
   '/admin/orders': typeof AdminOrdersIndexRoute
   '/admin/pages': typeof AdminPagesIndexRoute
@@ -507,7 +499,6 @@ export interface FileRoutesById {
   '/api/admin/orders.csv': typeof ApiAdminOrdersDotcsvRoute
   '/api/admin/subscribers.csv': typeof ApiAdminSubscribersDotcsvRoute
   '/api/admin/upload': typeof ApiAdminUploadRoute
-  '/api/payments/events': typeof ApiPaymentsEventsRoute
   '/api/stripe/webhook': typeof ApiStripeWebhookRoute
   '/admin/orders/': typeof AdminOrdersIndexRoute
   '/admin/pages/': typeof AdminPagesIndexRoute
@@ -566,7 +557,6 @@ export interface FileRouteTypes {
     | '/api/admin/orders.csv'
     | '/api/admin/subscribers.csv'
     | '/api/admin/upload'
-    | '/api/payments/events'
     | '/api/stripe/webhook'
     | '/admin/orders/'
     | '/admin/pages/'
@@ -622,7 +612,6 @@ export interface FileRouteTypes {
     | '/api/admin/orders.csv'
     | '/api/admin/subscribers.csv'
     | '/api/admin/upload'
-    | '/api/payments/events'
     | '/api/stripe/webhook'
     | '/admin/orders'
     | '/admin/pages'
@@ -679,7 +668,6 @@ export interface FileRouteTypes {
     | '/api/admin/orders.csv'
     | '/api/admin/subscribers.csv'
     | '/api/admin/upload'
-    | '/api/payments/events'
     | '/api/stripe/webhook'
     | '/admin/orders/'
     | '/admin/pages/'
@@ -723,7 +711,6 @@ export interface RootRouteChildren {
   ApiAdminOrdersDotcsvRoute: typeof ApiAdminOrdersDotcsvRoute
   ApiAdminSubscribersDotcsvRoute: typeof ApiAdminSubscribersDotcsvRoute
   ApiAdminUploadRoute: typeof ApiAdminUploadRoute
-  ApiPaymentsEventsRoute: typeof ApiPaymentsEventsRoute
   ApiStripeWebhookRoute: typeof ApiStripeWebhookRoute
 }
 
@@ -1100,13 +1087,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAdminUploadRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/payments/events': {
-      id: '/api/payments/events'
-      path: '/api/payments/events'
-      fullPath: '/api/payments/events'
-      preLoaderRoute: typeof ApiPaymentsEventsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/api/stripe/webhook': {
       id: '/api/stripe/webhook'
       path: '/api/stripe/webhook'
@@ -1196,7 +1176,6 @@ const rootRouteChildren: RootRouteChildren = {
   ApiAdminOrdersDotcsvRoute: ApiAdminOrdersDotcsvRoute,
   ApiAdminSubscribersDotcsvRoute: ApiAdminSubscribersDotcsvRoute,
   ApiAdminUploadRoute: ApiAdminUploadRoute,
-  ApiPaymentsEventsRoute: ApiPaymentsEventsRoute,
   ApiStripeWebhookRoute: ApiStripeWebhookRoute,
 }
 export const routeTree = rootRouteImport
